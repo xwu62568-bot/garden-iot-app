@@ -77,6 +77,13 @@ type YardProfile = {
   timezone: string;
 };
 
+type CreateYardInput = {
+  name: string;
+  city: string;
+  timezone: string;
+  areas: string[];
+};
+
 type YardMembership = {
   role: YardRole;
   roleLabel: string;
@@ -199,6 +206,7 @@ type YardState = {
   permissions: YardPermissions;
   switchYard: (yardId: string) => "switched" | "missing";
   setSelectedArea: (area: string) => void;
+  createYard: (input: CreateYardInput) => string;
   lightOn: boolean;
   setLightOn: (value: boolean) => void;
   brightness: number;
@@ -353,6 +361,24 @@ const makeInstallerYard = (): YardWorkspace => ({
 
 const makeInitialYards = (): YardWorkspace[] => [makeOwnerYard(), makeParentYard(), makeInstallerYard()];
 
+const makeEmptyOwnerYard = (id: string, input: CreateYardInput): YardWorkspace => ({
+  id,
+  profile: { name: input.name, city: input.city, timezone: input.timezone },
+  membership: { role: "owner", roleLabel: "所有者", expiresAt: null, authorizedDeviceIds: [] },
+  members: [{ id: "new-owner", name: "当前账户", role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] }],
+  areas: [...input.areas],
+  light: { id: "light", name: "庭院灯带", area: input.areas[0] ?? "前院", visible: false, on: false, brightness: 68, effect: "日落流光" },
+  fountainOn: false,
+  gateOpen: false,
+  irrigationOn: false,
+  irrigationMode: "持续运行",
+  controllerChannels: cloneControllerChannels().map((channel) => ({ ...channel, configured: false, name: "未配置", type: "未配置", area: "未分配", visible: false })),
+  scenes: [],
+  schedules: [],
+  linkages: [],
+  selectedArea: "全部",
+});
+
 const permissionsFor = (membership: YardMembership): YardPermissions => ({
   controlDevices: membership.role !== "installer" || membership.authorizedDeviceIds.length > 0,
   runScenes: membership.role !== "installer",
@@ -427,6 +453,14 @@ export default function Prototype() {
   const setSelectedArea = useCallback((area: string) => {
     updateActiveYard((yard) => ({ ...yard, selectedArea: area }));
   }, [updateActiveYard]);
+
+  const createYard = useCallback((input: CreateYardInput) => {
+    const id = `yard-${Date.now()}`;
+    setYards((current) => [...current, makeEmptyOwnerYard(id, input)]);
+    setActiveYardId(id);
+    setActiveTab("devices");
+    return id;
+  }, []);
 
   const setLightOn = useCallback((value: boolean) => {
     updateActiveYard((yard) => ({ ...yard, light: { ...yard.light, on: value } }));
@@ -515,6 +549,7 @@ export default function Prototype() {
       permissions,
       switchYard,
       setSelectedArea,
+      createYard,
       lightOn: activeYard.light.on,
       setLightOn,
       brightness: activeYard.light.brightness,
@@ -545,6 +580,7 @@ export default function Prototype() {
       activeYardId,
       yards,
       permissions,
+      createYard,
       notify,
       runDinnerScene,
       setBrightness,
@@ -827,6 +863,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
   const gateChannel = yard.controllerChannels.find((channel) => channel.id === 1);
   const irrigationChannel = yard.controllerChannels.find((channel) => channel.id === 3);
   const extraChannels = yard.controllerChannels.filter((channel) => channel.id > 3 && channel.configured && channel.visible);
+  const hasVisibleDevices = yard.activeYard.light.visible || Boolean(fountainChannel?.configured && fountainChannel.visible) || Boolean(gateChannel?.configured && gateChannel.visible) || Boolean(irrigationChannel?.configured && irrigationChannel.visible) || extraChannels.length > 0;
 
   return (
     <>
@@ -848,6 +885,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
           </Carousel>
 
           <section className="device-list" aria-label={`${area}设备`}>
+            {!hasVisibleDevices ? <div className="empty-state-card device-empty-state"><SlidersHorizontal size={30} /><strong>还没有设备</strong><small>添加设备后，它们会出现在这里，并按区域独立管理。</small><button className="primary-button" onClick={() => flow.push(addDeviceScreen())}><Plus size={18} />添加设备</button></div> : null}
             {yard.activeYard.light.visible ? <article className="device-card light-card" data-testid="device-lightstrip">
               <button
                 className="device-card-main"
@@ -1004,7 +1042,10 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
             yard.notify(`已切换至${target.profile.name}`);
           }
         }}
-        onCreate={() => yard.notify("新建庭院流程即将开始")}
+        onCreate={() => {
+          setYardSwitcherOpen(false);
+          flow.push(createYardScreen());
+        }}
         onJoin={() => yard.notify("加入庭院流程即将开始")}
         onManage={() => yard.notify("庭院管理即将打开")}
       />
@@ -1067,6 +1108,175 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
         </button>
       </BottomSheet>
     </>
+  );
+}
+
+function createYardScreen(): FlowScreen {
+  return {
+    id: "create-yard",
+    headerHeight: 58,
+    header: (flow) => <CreateYardHeader flow={flow} />,
+    render: (flow) => <CreateYardFlow flow={flow} />,
+  };
+}
+
+function CreateYardHeader({ flow }: { flow: FlowControls }) {
+  const visualMode = useVisualMode();
+  return (
+    <div className={`detail-header ${visualMode === "warm" ? "warm-yard-create-header" : "night-yard-create-header"}`}>
+      <button aria-label="返回" onClick={() => flow.pop()}><ArrowLeft size={22} /></button>
+      <strong>新建庭院</strong>
+      <span aria-hidden="true" />
+    </div>
+  );
+}
+
+type CreateYardViewProps = {
+  step: 1 | 2 | 3 | 4;
+  name: string;
+  city: string;
+  timezone: string;
+  areas: string[];
+  error: string;
+  onNameChange: (value: string) => void;
+  onCityChange: (city: string, timezone: string) => void;
+  onTimezoneChange: (timezone: string) => void;
+  onToggleArea: (area: string) => void;
+  onBack: () => void;
+  onNext: () => void;
+  onFinish: () => void;
+};
+
+const yardCities = [
+  { city: "上海", timezone: "Asia/Shanghai" },
+  { city: "苏州", timezone: "Asia/Shanghai" },
+  { city: "杭州", timezone: "Asia/Shanghai" },
+  { city: "东京", timezone: "Asia/Tokyo" },
+];
+
+const yardAreaOptions = ["前院", "后院", "露台", "泳池", "车库", "设备间"];
+
+function CreateYardFlow({ flow }: { flow: FlowControls }) {
+  const yard = useYard();
+  const visualMode = useVisualMode();
+  const keyboard = useKeyboard();
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [name, setName] = useState("");
+  const [city, setCity] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [areas, setAreas] = useState<string[]>([]);
+  const [error, setError] = useState("");
+
+  const onNext = () => {
+    keyboard.hide();
+    setError("");
+    if (step === 1 && !name.trim()) {
+      setError("请输入庭院名称");
+      return;
+    }
+    if (step === 2 && (!city || !timezone)) {
+      setError("请选择所在地和时区");
+      return;
+    }
+    if (step === 3 && areas.length === 0) {
+      setError("请至少选择一个区域");
+      return;
+    }
+    setStep((current) => Math.min(4, current + 1) as 1 | 2 | 3 | 4);
+  };
+
+  const onBack = () => {
+    keyboard.hide();
+    setError("");
+    if (step === 1) flow.pop();
+    else setStep((current) => Math.max(1, current - 1) as 1 | 2 | 3 | 4);
+  };
+
+  const onFinish = () => {
+    keyboard.hide();
+    yard.createYard({ name: name.trim(), city, timezone, areas });
+    yard.notify(`“${name.trim()}”已创建`);
+    flow.pop();
+  };
+
+  const props: CreateYardViewProps = {
+    step,
+    name,
+    city,
+    timezone,
+    areas,
+    error,
+    onNameChange: (value) => { setName(value); setError(""); },
+    onCityChange: (nextCity, nextTimezone) => { setCity(nextCity); setTimezone(nextTimezone); setError(""); },
+    onTimezoneChange: (nextTimezone) => { setTimezone(nextTimezone); setError(""); },
+    onToggleArea: (area) => { setAreas((current) => current.includes(area) ? current.filter((item) => item !== area) : [...current, area]); setError(""); },
+    onBack,
+    onNext,
+    onFinish,
+  };
+
+  return visualMode === "warm" ? <WarmCreateYardView {...props} /> : <NightCreateYardView {...props} />;
+}
+
+function CreateYardProgress({ step, visual }: { step: 1 | 2 | 3 | 4; visual: "night" | "warm" }) {
+  return <div className={`${visual}-yard-create-progress`} aria-label={`第${step}步，共4步`}>{[1, 2, 3, 4].map((item) => <span key={item} className={item <= step ? "active" : ""}>{item}</span>)}</div>;
+}
+
+function NightCreateYardView(props: CreateYardViewProps) {
+  return (
+    <MobileScroll className="app-screen dark-screen">
+      <main className="detail-page yard-create-page night-yard-create-page">
+        <CreateYardProgress step={props.step} visual="night" />
+        {props.step === 1 ? <>
+          <div className="yard-create-intro"><small>建立一个新的工作空间</small><h1>你的庭院叫什么？</h1><p>之后可以在这里管理设备、场景和自动化。</p></div>
+          <div className="mobile-field"><label className="field-label" htmlFor="create-yard-name">庭院名称</label><KeyboardInput id="create-yard-name" data-testid="create-yard-name" value={props.name} placeholder="例如：湖畔小院" enterKeyHint="next" onChange={(event) => props.onNameChange(event.target.value)} /></div>
+        </> : null}
+        {props.step === 2 ? <>
+          <div className="yard-create-intro"><small>第 2 步</small><h1>庭院在哪里？</h1><p>时区会影响定时和日出日落自动化。</p></div>
+          <div className="yard-create-choice-list">{yardCities.map((item) => <button key={item.city} className={props.city === item.city ? "selected" : ""} aria-pressed={props.city === item.city} onClick={() => props.onCityChange(item.city, item.timezone)}><span>{item.city}</span><small>{item.timezone}</small><Check size={18} /></button>)}</div>
+          <div className="yard-create-timezone" data-testid="create-yard-timezone"><Globe size={18} /><span><small>当前时区</small><strong>{props.timezone || "请选择所在地"}</strong></span></div>
+        </> : null}
+        {props.step === 3 ? <>
+          <div className="yard-create-intro"><small>第 3 步</small><h1>先创建哪些区域？</h1><p>区域用于筛选设备，之后仍可在庭院管理中调整。</p></div>
+          <div className="yard-create-area-grid">{yardAreaOptions.map((area) => <button key={area} className={props.areas.includes(area) ? "selected" : ""} aria-pressed={props.areas.includes(area)} onClick={() => props.onToggleArea(area)}>{area}{props.areas.includes(area) ? <Check size={17} weight="bold" /> : <Plus size={17} />}</button>)}</div>
+        </> : null}
+        {props.step === 4 ? <>
+          <div className="yard-create-intro"><small>确认信息</small><h1>准备好了吗？</h1><p>庭院创建后会进入空设备页，你可以从“添加设备”开始。</p></div>
+          <section className="yard-create-summary"><div><span>庭院名称</span><strong>{props.name}</strong></div><div><span>所在地</span><strong>{props.city} · {props.timezone}</strong></div><div><span>初始区域</span><strong>{props.areas.join("、")}</strong></div></section>
+        </> : null}
+        {props.error ? <p className="form-error" role="alert">{props.error}</p> : null}
+        <div className="yard-create-footer"><button className="secondary-button" onClick={props.onBack}>返回</button>{props.step < 4 ? <button className="primary-button" data-testid="create-yard-next" onClick={props.onNext}>下一步<CaretRight size={17} /></button> : <button className="primary-button" data-testid="finish-create-yard" onClick={props.onFinish}>创建庭院</button>}</div>
+      </main>
+    </MobileScroll>
+  );
+}
+
+function WarmCreateYardView(props: CreateYardViewProps) {
+  return (
+    <MobileScroll className="app-screen dark-screen">
+      <main className="detail-page yard-create-page warm-yard-create-page">
+        <CreateYardProgress step={props.step} visual="warm" />
+        {props.step === 1 ? <>
+          <div className="yard-create-intro"><small>新的庭院空间</small><h1>给庭院起个名字</h1><p>设备、场景和自动化会在这里独立保存。</p></div>
+          <div className="mobile-field"><label className="field-label" htmlFor="create-yard-name">庭院名称</label><KeyboardInput id="create-yard-name" data-testid="create-yard-name" value={props.name} placeholder="例如：湖畔小院" enterKeyHint="next" onChange={(event) => props.onNameChange(event.target.value)} /></div>
+        </> : null}
+        {props.step === 2 ? <>
+          <div className="yard-create-intro"><small>所在地与时间</small><h1>庭院在哪里？</h1><p>选择所在地，之后可以单独调整时区。</p></div>
+          <div className="yard-create-choice-list">{yardCities.map((item) => <button key={item.city} className={props.city === item.city ? "selected" : ""} aria-pressed={props.city === item.city} onClick={() => props.onCityChange(item.city, item.timezone)}><span>{item.city}</span><small>{item.timezone}</small>{props.city === item.city ? <Check size={18} weight="bold" /> : <CaretRight size={18} />}</button>)}</div>
+          <div className="yard-create-timezone" data-testid="create-yard-timezone"><Globe size={18} /><span><small>庭院时区</small><strong>{props.timezone || "请选择所在地"}</strong></span></div>
+        </> : null}
+        {props.step === 3 ? <>
+          <div className="yard-create-intro"><small>空间结构</small><h1>先创建哪些区域？</h1><p>区域会成为设备页的筛选标签。</p></div>
+          <div className="yard-create-area-grid">{yardAreaOptions.map((area) => <button key={area} className={props.areas.includes(area) ? "selected" : ""} aria-pressed={props.areas.includes(area)} onClick={() => props.onToggleArea(area)}>{area}{props.areas.includes(area) ? <Check size={17} weight="bold" /> : <Plus size={17} />}</button>)}</div>
+        </> : null}
+        {props.step === 4 ? <>
+          <div className="yard-create-intro"><small>最后确认</small><h1>一切准备就绪</h1><p>创建后会进入空庭院首页，随时可以添加设备。</p></div>
+          <section className="yard-create-summary"><div><span>庭院名称</span><strong>{props.name}</strong></div><div><span>所在地</span><strong>{props.city} · {props.timezone}</strong></div><div><span>初始区域</span><strong>{props.areas.join("、")}</strong></div></section>
+        </> : null}
+        {props.error ? <p className="form-error" role="alert">{props.error}</p> : null}
+        <div className="yard-create-footer"><button className="secondary-button" onClick={props.onBack}>返回</button>{props.step < 4 ? <button className="primary-button" data-testid="create-yard-next" onClick={props.onNext}>下一步<CaretRight size={17} /></button> : <button className="primary-button" data-testid="finish-create-yard" onClick={props.onFinish}>完成创建</button>}</div>
+      </main>
+    </MobileScroll>
   );
 }
 

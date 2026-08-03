@@ -3876,3 +3876,266 @@ button {
   border-color: rgb(49 95 53 / 22%);
   background: #fff;
 }
+
+.device-empty-state,
+.yard-create-page {
+  display: grid;
+  align-content: start;
+}
+
+.device-empty-state {
+  justify-items: center;
+  gap: 9px;
+  margin: 12px 16px;
+  padding: 30px 18px;
+  border: 1px dashed #344859;
+  border-radius: 18px;
+  color: #8294a7;
+  text-align: center;
+}
+
+.device-empty-state strong {
+  color: #eef4fa;
+  font-size: 15px;
+}
+
+.device-empty-state small {
+  max-width: 240px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.device-empty-state .primary-button {
+  width: auto;
+  min-width: 132px;
+  margin-top: 5px;
+}
+
+.yard-create-page {
+  min-height: 100%;
+  padding: 18px 18px 28px;
+  box-sizing: border-box;
+}
+
+.night-yard-create-page {
+  color: #eef4fa;
+  background: #0b121a;
+}
+
+.warm-yard-create-page {
+  color: #203923;
+  background: #fcfaf6;
+}
+
+.night-yard-create-progress,
+.warm-yard-create-progress {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 28px;
+}
+
+.night-yard-create-progress span,
+.warm-yard-create-progress span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 10px;
+}
+
+.night-yard-create-progress span {
+  color: #718395;
+  background: #182533;
+}
+
+.night-yard-create-progress span.active {
+  color: #101820;
+  background: #d99a3e;
+}
+
+.warm-yard-create-progress span {
+  color: #879087;
+  background: #edf1eb;
+}
+
+.warm-yard-create-progress span.active {
+  color: #fff;
+  background: #315f35;
+}
+
+.yard-create-intro {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.yard-create-intro small {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.yard-create-intro h1 {
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.2;
+}
+
+.yard-create-intro p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.night-yard-create-page .yard-create-intro small,
+.night-yard-create-page .yard-create-intro p {
+  color: #8294a7;
+}
+
+.warm-yard-create-page .yard-create-intro small,
+.warm-yard-create-page .yard-create-intro p {
+  color: #7d877c;
+}
+
+.yard-create-choice-list,
+.yard-create-area-grid,
+.yard-create-summary {
+  display: grid;
+  gap: 9px;
+}
+
+.yard-create-choice-list button,
+.yard-create-area-grid button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 13px;
+  text-align: left;
+}
+
+.yard-create-choice-list button span,
+.yard-create-choice-list button small {
+  display: block;
+}
+
+.yard-create-choice-list button span {
+  font-size: 13px;
+}
+
+.yard-create-choice-list button small {
+  margin-left: auto;
+  font-size: 9px;
+}
+
+.night-yard-create-page .yard-create-choice-list button,
+.night-yard-create-page .yard-create-area-grid button,
+.night-yard-create-page .yard-create-summary {
+  border: 1px solid #263748;
+  color: #eef4fa;
+  background: #111c28;
+}
+
+.night-yard-create-page .yard-create-choice-list button small,
+.night-yard-create-page .yard-create-summary span {
+  color: #8294a7;
+}
+
+.night-yard-create-page .yard-create-choice-list button.selected,
+.night-yard-create-page .yard-create-area-grid button.selected {
+  border-color: #d99a3e;
+  color: #f0b45a;
+  background: rgb(217 154 62 / 11%);
+}
+
+.warm-yard-create-page .yard-create-choice-list button,
+.warm-yard-create-page .yard-create-area-grid button,
+.warm-yard-create-page .yard-create-summary {
+  border: 1px solid #ebe6dc;
+  color: #203923;
+  background: #fffefb;
+  box-shadow: 0 7px 20px rgb(75 61 36 / 6%);
+}
+
+.warm-yard-create-page .yard-create-choice-list button small,
+.warm-yard-create-page .yard-create-summary span {
+  color: #7d877d;
+}
+
+.warm-yard-create-page .yard-create-choice-list button.selected,
+.warm-yard-create-page .yard-create-area-grid button.selected {
+  border-color: #315f35;
+  color: #315f35;
+  background: #edf4ec;
+}
+
+.yard-create-timezone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 13px;
+}
+
+.yard-create-timezone span {
+  display: grid;
+  gap: 3px;
+}
+
+.yard-create-timezone small {
+  font-size: 9px;
+}
+
+.yard-create-timezone strong {
+  font-size: 12px;
+}
+
+.night-yard-create-page .yard-create-timezone {
+  color: #9fb2c2;
+  background: #172432;
+}
+
+.warm-yard-create-page .yard-create-timezone {
+  color: #315f35;
+  background: #edf4ec;
+}
+
+.yard-create-summary {
+  padding: 5px 14px;
+  border-radius: 16px;
+}
+
+.yard-create-summary div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid currentColor;
+  border-color: rgb(127 143 155 / 16%);
+}
+
+.yard-create-summary div:last-child {
+  border-bottom: 0;
+}
+
+.yard-create-summary span {
+  font-size: 10px;
+}
+
+.yard-create-summary strong {
+  max-width: 65%;
+  font-size: 11px;
+  text-align: right;
+}
+
+.yard-create-footer {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 9px;
+  margin-top: 28px;
+}

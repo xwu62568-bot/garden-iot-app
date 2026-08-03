@@ -54,3 +54,27 @@ test("yard data and permissions stay isolated across all root tabs", async ({ pa
   await expect(page.getByText("露台灯带", { exact: true })).toBeVisible();
   await expect(page.getByText("父母家廊灯", { exact: true })).toHaveCount(0);
 });
+
+test("creates an empty yard with location timezone and initial areas", async ({ page }) => {
+  await openPrototype(page, "warm");
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: "新建庭院" }).click();
+
+  await page.getByTestId("create-yard-name").fill("湖畔小院");
+  await page.getByTestId("create-yard-next").click();
+  await page.getByRole("button", { name: "杭州" }).click();
+  await expect(page.getByTestId("create-yard-timezone")).toContainText("Asia/Shanghai");
+  await page.getByTestId("create-yard-next").click();
+  await page.getByTestId("flow-current").getByRole("button", { name: "前院" }).click();
+  await page.getByTestId("flow-current").getByRole("button", { name: "露台" }).click();
+  await page.getByTestId("create-yard-next").click();
+  await page.getByTestId("finish-create-yard").click();
+
+  await expect(page.getByTestId("active-yard-name")).toHaveText("湖畔小院");
+  await expect(page.getByText("还没有设备")).toBeVisible();
+  await expect(page.getByTestId("add-device")).toBeVisible();
+  await page.getByTestId("tab-scenes").click();
+  await expect(page.getByText("还没有场景")).toBeVisible();
+  await page.getByTestId("tab-automation").click();
+  await expect(page.getByText("还没有定时")).toBeVisible();
+});
