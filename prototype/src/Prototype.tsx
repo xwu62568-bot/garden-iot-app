@@ -63,6 +63,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { publicAsset } from "./publicAsset";
 
 type RootTab = "devices" | "scenes" | "automation" | "me";
 type AutomationTab = "schedule" | "linkage";
@@ -439,7 +440,7 @@ function NightDevicesTop({ flow }: { flow: FlowControls }) {
     <>
       <AppTopBar selectable showNotifications action={{ label: "添加设备", onClick: () => flow.push(addDeviceScreen()) }} />
       <section className="garden-hero" aria-label="庭院运行状态">
-        <img src="/assets/app/night-garden-hero.png" alt="夜间庭院灯光、喷泉与庭院门" draggable={false} />
+        <img src={publicAsset("assets/app/night-garden-hero.png")} alt="夜间庭院灯光、喷泉与庭院门" draggable={false} />
         <div className="hero-scrim" />
         <div className="hero-status">
           <span className="hero-status-icon"><ShieldCheck size={27} weight="duotone" /></span>
@@ -453,7 +454,7 @@ function NightDevicesTop({ flow }: { flow: FlowControls }) {
 function WarmDevicesTop({ flow }: { flow: FlowControls }) {
   return (
     <section className="warm-devices-top" aria-label="庭院运行状态">
-      <img className="warm-devices-hero-image" src="/assets/app/warm-garden-hero-faded.png" alt="黄昏庭院花园与庭院门" draggable={false} />
+      <img className="warm-devices-hero-image" src={publicAsset("assets/app/warm-garden-hero-faded.png")} alt="黄昏庭院花园与庭院门" draggable={false} />
       <header className="warm-devices-topbar">
         <button className="warm-yard-selector" aria-label="切换庭院">
           <strong>我的庭院</strong>
@@ -538,9 +539,9 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 aria-label="打开露台灯带详情"
               >
                 {isWarm ? (
-                  <img className="device-thumb pictogram warm-pictogram" src="/assets/app/icons/warm/lightstrip.png" alt="露台灯带图标" draggable={false} />
+                  <img className="device-thumb pictogram warm-pictogram" src={publicAsset("assets/app/icons/warm/lightstrip.png")} alt="露台灯带图标" draggable={false} />
                 ) : (
-                  <img className="device-thumb photo" src="/assets/app/sunset-strip-thumbnail.png" alt="日落流光灯带" draggable={false} />
+                  <img className="device-thumb photo" src={publicAsset("assets/app/sunset-strip-thumbnail.png")} alt="日落流光灯带" draggable={false} />
                 )}
                 <span className="device-copy">
                   <span className="device-title">露台灯带</span>
@@ -563,7 +564,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
               </button>
               {isWarm ? (
                 <span className="warm-light-actions">
-                  <img className="warm-effect-swatch" src="/assets/app/sunset-card-glow.png" alt="日落流光效果" draggable={false} />
+                  <img className="warm-effect-swatch" src={publicAsset("assets/app/sunset-card-glow.png")} alt="日落流光效果" draggable={false} />
                   <Switch
                     label="露台灯带开关"
                     value={yard.lightOn}
@@ -585,7 +586,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
               )}
               <img
                 className="light-card-glow"
-                src="/assets/app/sunset-card-glow.png"
+                src={publicAsset("assets/app/sunset-card-glow.png")}
                 data-effect={yard.lightEffect}
                 data-active={yard.lightOn}
                 alt=""
@@ -600,7 +601,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 onClick={() => flow.push(detailScreen("fountain-detail", fountainChannel.name, (detailFlow) => <FountainDetail flow={detailFlow} />))}
                 aria-label={`打开${fountainChannel.name}详情`}
               >
-                <img className="device-thumb pictogram" src={`/assets/app/icons/${isWarm ? "warm" : "night"}/fountain.png`} alt="后院喷泉图标" draggable={false} />
+                <img className="device-thumb pictogram" src={publicAsset(`assets/app/icons/${isWarm ? "warm" : "night"}/fountain.png`)} alt="后院喷泉图标" draggable={false} />
                 <span className="device-copy">
                   <span className="device-title">{fountainChannel.name}</span>
                   <span className={`device-state ${yard.fountainOn ? "on" : ""}`}><i />{yard.fountainOn ? "已开启" : "已关闭"}</span>
@@ -623,7 +624,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 onClick={() => flow.push(detailScreen("gate-detail", gateChannel.name, (detailFlow) => <GateDetail flow={detailFlow} />))}
                 aria-label={`打开${gateChannel.name}详情`}
               >
-                <img className="device-thumb pictogram" src={`/assets/app/icons/${isWarm ? "warm" : "night"}/gate.png`} alt="庭院门图标" draggable={false} />
+                <img className="device-thumb pictogram" src={publicAsset(`assets/app/icons/${isWarm ? "warm" : "night"}/gate.png`)} alt="庭院门图标" draggable={false} />
                 <span className="device-copy">
                   <span className="device-title">{gateChannel.name}</span>
                   <span className={`device-state neutral ${isWarm ? "secure-state" : ""}`}><i />{yard.gateOpen ? "已打开" : "已关闭"}{isWarm ? <ShieldCheck size={16} weight="duotone" /> : null}</span>
@@ -641,7 +642,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 onClick={() => flow.push(detailScreen("irrigation-detail", irrigationChannel.name, (detailFlow) => <IrrigationDetail flow={detailFlow} />))}
                 aria-label={`打开${irrigationChannel.name}详情`}
               >
-                <img className="device-thumb pictogram" src={`/assets/app/icons/${isWarm ? "warm" : "night"}/irrigation.png`} alt="前院灌溉图标" draggable={false} />
+                <img className="device-thumb pictogram" src={publicAsset(`assets/app/icons/${isWarm ? "warm" : "night"}/irrigation.png`)} alt="前院灌溉图标" draggable={false} />
                 <span className="device-copy">
                   <span className="device-title">{irrigationChannel.name}</span>
                   <span className={`device-state ${yard.irrigationOn ? "on" : "neutral"}`}><i />{yard.irrigationOn ? "运行中" : "空闲"}</span>
@@ -904,7 +905,7 @@ function LightDetail() {
     <MobileScroll className="app-screen dark-screen">
       <main className="detail-page light-detail-page">
         <section className="device-visual">
-          <img src="/assets/app/sunset-strip-thumbnail.png" alt="露台灯带日落流光" draggable={false} />
+          <img src={publicAsset("assets/app/sunset-strip-thumbnail.png")} alt="露台灯带日落流光" draggable={false} />
           <div className="device-visual-copy">
             <span><WifiHigh size={15} /> 在线 · 云端</span>
             <strong>{yard.lightEffect}</strong>
@@ -1022,7 +1023,7 @@ function FountainDetail({ flow }: { flow: FlowControls }) {
     <MobileScroll className="app-screen dark-screen">
       <main className="detail-page utility-detail">
         <section className="utility-status">
-          <span className="utility-icon pictogram-shell"><img src={`/assets/app/icons/${visualMode}/fountain.png`} alt="后院喷泉图标" draggable={false} /></span>
+          <span className="utility-icon pictogram-shell"><img src={publicAsset(`assets/app/icons/${visualMode}/fountain.png`)} alt="后院喷泉图标" draggable={false} /></span>
           <small>后院 · Wi-Fi 在线</small>
           <strong>{yard.fountainOn ? "运行中" : "已关闭"}</strong>
           <p>{yard.fountainOn ? "已运行 18 分钟" : "上次运行：今天 19:30"}</p>
@@ -1054,7 +1055,7 @@ function GateDetail({ flow }: { flow: FlowControls }) {
       <MobileScroll className="app-screen dark-screen">
         <main className="detail-page utility-detail">
           <section className="utility-status">
-            <span className="utility-icon pictogram-shell"><img src={`/assets/app/icons/${visualMode}/gate.png`} alt="庭院门图标" draggable={false} /></span>
+            <span className="utility-icon pictogram-shell"><img src={publicAsset(`assets/app/icons/${visualMode}/gate.png`)} alt="庭院门图标" draggable={false} /></span>
             <small>前院 · Wi-Fi 在线</small>
             <strong>{yard.gateOpen ? "已打开" : "已关闭"}</strong>
             <p>状态反馈正常 · 最后更新刚刚</p>
@@ -1082,7 +1083,7 @@ function IrrigationDetail({ flow }: { flow: FlowControls }) {
     <MobileScroll className="app-screen dark-screen">
       <main className="detail-page utility-detail">
         <section className="utility-status">
-          <span className="utility-icon pictogram-shell"><img src={`/assets/app/icons/${visualMode}/irrigation.png`} alt="前院灌溉图标" draggable={false} /></span>
+          <span className="utility-icon pictogram-shell"><img src={publicAsset(`assets/app/icons/${visualMode}/irrigation.png`)} alt="前院灌溉图标" draggable={false} /></span>
           <small>前院 · Wi-Fi 在线</small>
           <strong>{yard.irrigationOn ? "灌溉中" : "空闲"}</strong>
           <p>{yard.irrigationOn ? `${yard.irrigationMode} · 已运行 06:24` : "下一计划：明日 06:30"}</p>
