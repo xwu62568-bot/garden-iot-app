@@ -105,3 +105,28 @@ for (const entry of [
     await expect(page.getByRole("alert")).toHaveText(entry.message);
   });
 }
+
+test("owner updates yard profile and cannot remove an area in use", async ({ page }) => {
+  await openPrototype(page);
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: "管理当前庭院" }).click();
+  await page.getByRole("button", { name: "庭院资料" }).click();
+  await page.getByTestId("yard-profile-name").fill("我的花园");
+  await page.getByTestId("save-yard-profile").click();
+  await expect(page.getByRole("status")).toContainText("庭院资料已保存");
+
+  await page.getByRole("button", { name: "区域管理" }).click();
+  await page.getByRole("button", { name: "删除露台" }).click();
+  await expect(page.getByRole("alert")).toHaveText("请先移动露台中的设备");
+});
+
+test("member sees read-only yard information", async ({ page }) => {
+  await openPrototype(page);
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: /切换到父母家/ }).click();
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: "管理当前庭院" }).click();
+  await expect(page.getByText("只读访问")).toBeVisible();
+  await expect(page.getByTestId("save-yard-profile")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "退出庭院" })).toBeVisible();
+});

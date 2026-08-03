@@ -4240,3 +4240,212 @@ button {
   color: #fff;
   background: #315f35;
 }
+
+.yard-management-page,
+.yard-subpage {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 18px 16px 30px;
+  box-sizing: border-box;
+}
+
+.night-yard-management-page,
+.yard-subpage {
+  color: #eef4fa;
+  background: #0b121a;
+}
+
+.warm-yard-management-page {
+  color: #203923;
+  background: #fcfaf6;
+}
+
+.yard-management-hero,
+.yard-subpage-intro {
+  display: grid;
+  gap: 6px;
+}
+
+.yard-management-hero small,
+.yard-subpage-intro small {
+  font-size: 10px;
+}
+
+.night-yard-management-page .yard-management-hero small,
+.yard-subpage-intro small {
+  color: #8294a7;
+}
+
+.warm-yard-management-page .yard-management-hero small,
+.warm-yard-management-page .yard-subpage-intro small {
+  color: #7d877d;
+}
+
+.yard-management-hero h1,
+.yard-subpage-intro h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.yard-management-hero p,
+.yard-subpage-intro p {
+  margin: 0;
+  font-size: 11px;
+}
+
+.night-yard-management-page .yard-management-hero p,
+.yard-subpage-intro p {
+  color: #8294a7;
+}
+
+.warm-yard-management-page .yard-management-hero p,
+.warm-yard-management-page .yard-subpage-intro p {
+  color: #7d877d;
+}
+
+.permission-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: max-content;
+  margin-top: 4px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  color: #8294a7;
+  background: #182533;
+  font-size: 10px;
+}
+
+.warm-yard-management-page .permission-note,
+.warm-yard-management-page .yard-subpage .permission-note {
+  color: #315f35;
+  background: #edf4ec;
+}
+
+.yard-management-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.yard-management-stats div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 13px;
+  text-align: center;
+}
+
+.night-yard-management-page .yard-management-stats div {
+  background: #111c28;
+}
+
+.warm-yard-management-page .yard-management-stats div {
+  background: #fffefb;
+  box-shadow: 0 6px 18px rgb(75 61 36 / 6%);
+}
+
+.yard-management-stats strong {
+  font-size: 20px;
+}
+
+.yard-management-stats small {
+  font-size: 9px;
+}
+
+.night-yard-management-page .yard-management-stats strong,
+.night-yard-management-page .yard-management-stats small {
+  color: #f0b45a;
+}
+
+.warm-yard-management-page .yard-management-stats strong,
+.warm-yard-management-page .yard-management-stats small {
+  color: #315f35;
+}
+
+.yard-profile-field {
+  display: grid;
+  gap: 6px;
+}
+
+.yard-profile-field label {
+  font-size: 10px;
+}
+
+.yard-profile-field input {
+  width: 100%;
+  padding: 12px 13px;
+  border-radius: 11px;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 12px;
+}
+
+.night-yard-management-page .yard-profile-field input,
+.yard-subpage .yard-profile-field input {
+  border: 1px solid #263748;
+  color: #eef4fa;
+  background: #111c28;
+}
+
+.warm-yard-management-page .yard-profile-field input {
+  border: 1px solid #ebe6dc;
+  color: #203923;
+  background: #fffefb;
+}
+
+.yard-area-management-list,
+.yard-member-list {
+  display: grid;
+  gap: 8px;
+}
+
+.yard-area-management-list > div,
+.yard-member-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px;
+  border-radius: 13px;
+}
+
+.yard-subpage .yard-area-management-list > div,
+.yard-subpage .yard-member-list > div {
+  border: 1px solid #263748;
+  background: #111c28;
+}
+
+.warm-yard-management-page .yard-area-management-list > div,
+.warm-yard-management-page .yard-member-list > div {
+  border-color: #ebe6dc;
+  background: #fffefb;
+  box-shadow: 0 6px 18px rgb(75 61 36 / 6%);
+}
+
+.yard-area-management-list span,
+.yard-member-list span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.yard-area-management-list strong,
+.yard-member-list strong {
+  font-size: 12px;
+}
+
+.yard-area-management-list button {
+  padding: 5px 7px;
+  border: 0;
+  color: #df8a81;
+  background: transparent;
+  font-size: 10px;
+}
+
+.yard-member-list small,
+.yard-area-management-list small {
+  color: #8294a7;
+  font-size: 9px;
+}

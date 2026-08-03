@@ -99,6 +99,8 @@ type InviteLookupResult =
   | { status: "ready"; invite: InvitePreview }
   | { status: "invalid" | "expired" | "joined"; message: string };
 
+type RemoveAreaResult = "removed" | "in-use" | "last-area" | "missing";
+
 type YardMembership = {
   role: YardRole;
   roleLabel: string;
@@ -224,6 +226,10 @@ type YardState = {
   createYard: (input: CreateYardInput) => string;
   lookupInvite: (code: string) => InviteLookupResult;
   acceptInvite: (invite: InvitePreview) => string;
+  updateYardProfile: (yardId: string, profile: YardProfile) => void;
+  addYardArea: (yardId: string, name: string) => boolean;
+  renameYardArea: (yardId: string, oldName: string, newName: string) => boolean;
+  removeYardArea: (yardId: string, name: string) => RemoveAreaResult;
   lightOn: boolean;
   setLightOn: (value: boolean) => void;
   brightness: number;
@@ -515,6 +521,44 @@ export default function Prototype() {
     return id;
   }, []);
 
+  const updateYardProfile = useCallback((yardId: string, profile: YardProfile) => {
+    setYards((current) => current.map((yard) => yard.id === yardId ? { ...yard, profile } : yard));
+  }, []);
+
+  const addYardArea = useCallback((yardId: string, name: string) => {
+    const normalized = name.trim();
+    const target = yards.find((yard) => yard.id === yardId);
+    if (!target || !normalized || target.areas.includes(normalized)) return false;
+    setYards((current) => current.map((yard) => yard.id === yardId ? { ...yard, areas: [...yard.areas, normalized] } : yard));
+    return true;
+  }, [yards]);
+
+  const renameYardArea = useCallback((yardId: string, oldName: string, newName: string) => {
+    const normalized = newName.trim();
+    const target = yards.find((yard) => yard.id === yardId);
+    if (!target || !normalized || target.areas.includes(normalized)) return false;
+    setYards((current) => current.map((yard) => {
+      if (yard.id !== yardId) return yard;
+      return {
+        ...yard,
+        areas: yard.areas.map((area) => area === oldName ? normalized : area),
+        selectedArea: yard.selectedArea === oldName ? normalized : yard.selectedArea,
+        light: yard.light.area === oldName ? { ...yard.light, area: normalized } : yard.light,
+        controllerChannels: yard.controllerChannels.map((channel) => channel.area === oldName ? { ...channel, area: normalized } : channel),
+      };
+    }));
+    return true;
+  }, [yards]);
+
+  const removeYardArea = useCallback((yardId: string, name: string): RemoveAreaResult => {
+    const target = yards.find((yard) => yard.id === yardId);
+    if (!target || !target.areas.includes(name)) return "missing";
+    if (target.areas.length <= 1) return "last-area";
+    if ((target.light.visible && target.light.area === name) || target.controllerChannels.some((channel) => channel.configured && channel.area === name)) return "in-use";
+    setYards((current) => current.map((yard) => yard.id === yardId ? { ...yard, areas: yard.areas.filter((area) => area !== name), selectedArea: yard.selectedArea === name ? "全部" : yard.selectedArea } : yard));
+    return "removed";
+  }, [yards]);
+
   const setLightOn = useCallback((value: boolean) => {
     updateActiveYard((yard) => ({ ...yard, light: { ...yard.light, on: value } }));
   }, [updateActiveYard]);
@@ -605,6 +649,10 @@ export default function Prototype() {
       createYard,
       lookupInvite,
       acceptInvite,
+      updateYardProfile,
+      addYardArea,
+      renameYardArea,
+      removeYardArea,
       lightOn: activeYard.light.on,
       setLightOn,
       brightness: activeYard.light.brightness,
@@ -638,6 +686,10 @@ export default function Prototype() {
       createYard,
       lookupInvite,
       acceptInvite,
+      updateYardProfile,
+      addYardArea,
+      renameYardArea,
+      removeYardArea,
       notify,
       runDinnerScene,
       setBrightness,
@@ -1107,7 +1159,10 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
           setYardSwitcherOpen(false);
           flow.push(joinYardScreen());
         }}
-        onManage={() => yard.notify("庭院管理即将打开")}
+        onManage={() => {
+          setYardSwitcherOpen(false);
+          flow.push(yardManagementScreen());
+        }}
       />
 
       <BottomSheet
@@ -1451,6 +1506,121 @@ function InvitePreviewCard({ preview, visual, onAccept }: { preview: InvitePrevi
       <button className="primary-button" data-testid="accept-invite" onClick={onAccept}>确认加入</button>
     </section>
   );
+}
+
+function yardManagementScreen(): FlowScreen {
+  return {
+    id: "yard-management",
+    headerHeight: 58,
+    header: (flow) => <YardManagementHeader flow={flow} />,
+    render: (flow) => <YardManagementPage flow={flow} />,
+  };
+}
+
+function YardManagementHeader({ flow }: { flow: FlowControls }) {
+  const visualMode = useVisualMode();
+  return (
+    <div className={`detail-header ${visualMode === "warm" ? "warm-yard-create-header" : "night-yard-create-header"}`}>
+      <button aria-label="返回" onClick={() => flow.pop()}><ArrowLeft size={22} /></button>
+      <strong>庭院管理</strong>
+      <span aria-hidden="true" />
+    </div>
+  );
+}
+
+function YardManagementPage({ flow }: { flow: FlowControls }) {
+  const yard = useYard();
+  const visualMode = useVisualMode();
+  const canManage = yard.permissions.manageYard;
+  const configuredDevices = yard.controllerChannels.filter((channel) => channel.configured).length + (yard.activeYard.light.visible ? 1 : 0);
+  return (
+    <MobileScroll className="app-screen dark-screen">
+      <main className={`detail-page yard-management-page ${visualMode === "warm" ? "warm-yard-management-page" : "night-yard-management-page"}`}>
+        <section className="yard-management-hero"><small>{yard.activeYard.membership.roleLabel}</small><h1>{yard.activeYard.profile.name}</h1><p>{yard.activeYard.profile.city} · {yard.activeYard.profile.timezone}</p>{!canManage ? <span className="permission-note"><ShieldCheck size={17} />只读访问</span> : null}</section>
+        <section className="yard-management-stats"><div><strong>{configuredDevices}</strong><small>设备</small></div><div><strong>{yard.scenes.length}</strong><small>场景</small></div><div><strong>{yard.schedules.length + yard.linkages.length}</strong><small>自动化</small></div></section>
+        <section className="content-section flush-section"><div className="settings-list">
+          <button onClick={() => flow.push(yardProfileScreen())}><Globe size={21} /><span>庭院资料</span><strong>{canManage ? "编辑" : "查看"}</strong></button>
+          <button onClick={() => flow.push(areaManagementScreen())}><MapPin size={21} /><span>区域管理</span><strong>{yard.activeYard.areas.length} 个区域</strong></button>
+          <button onClick={() => flow.push(membersScreen())}><Users size={21} /><span>家庭与成员</span><strong>{yard.activeYard.members.length} 人</strong></button>
+          <button onClick={() => flow.push(installerAuthorizationScreen())}><ShieldCheck size={21} /><span>临时安装商权限</span><strong>{yard.activeYard.members.filter((member) => member.role === "installer").length} 个</strong></button>
+        </div></section>
+        {!canManage ? <button className="secondary-button" onClick={() => yard.notify("已提交退出庭院请求")}>退出庭院</button> : null}
+      </main>
+    </MobileScroll>
+  );
+}
+
+function yardProfileScreen(): FlowScreen {
+  return detailScreen("yard-profile", "庭院资料", (flow) => <YardProfilePage flow={flow} />);
+}
+
+function YardProfilePage({ flow }: { flow: FlowControls }) {
+  const yard = useYard();
+  const keyboard = useKeyboard();
+  const canManage = yard.permissions.manageYard;
+  const [name, setName] = useState(yard.activeYard.profile.name);
+  const [city, setCity] = useState(yard.activeYard.profile.city);
+  const [timezone, setTimezone] = useState(yard.activeYard.profile.timezone);
+  const [error, setError] = useState("");
+
+  const save = () => {
+    keyboard.hide();
+    if (!name.trim() || !city.trim() || !timezone.trim()) {
+      setError("请完整填写庭院资料");
+      return;
+    }
+    yard.updateYardProfile(yard.activeYardId, { name: name.trim(), city: city.trim(), timezone: timezone.trim() });
+    yard.notify("庭院资料已保存");
+    flow.pop();
+  };
+
+  return (
+    <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage">
+      <div className="yard-subpage-intro"><small>当前庭院</small><h1>{yard.activeYard.profile.name}</h1><p>{canManage ? "名称、所在地和时区会影响整个庭院。" : "你拥有查看权限，修改由庭院所有者完成。"}</p></div>
+      <div className="mobile-field"><label className="field-label" htmlFor="yard-profile-name">庭院名称</label><KeyboardInput id="yard-profile-name" data-testid="yard-profile-name" value={name} disabled={!canManage} onChange={(event) => setName(event.target.value)} /></div>
+      <div className="yard-profile-field"><label htmlFor="yard-profile-city">所在地</label><input id="yard-profile-city" value={city} disabled={!canManage} onChange={(event) => setCity(event.target.value)} /></div>
+      <div className="yard-profile-field"><label htmlFor="yard-profile-timezone">时区</label><input id="yard-profile-timezone" value={timezone} disabled={!canManage} onChange={(event) => setTimezone(event.target.value)} /></div>
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {canManage ? <button className="primary-button" data-testid="save-yard-profile" onClick={save}>保存资料</button> : <div className="permission-note"><ShieldCheck size={17} />只读访问</div>}
+    </main></MobileScroll>
+  );
+}
+
+function areaManagementScreen(): FlowScreen {
+  return detailScreen("area-management", "区域管理", (flow) => <AreaManagementPage flow={flow} />);
+}
+
+function AreaManagementPage({ flow }: { flow: FlowControls }) {
+  const yard = useYard();
+  const canManage = yard.permissions.manageYard;
+  const [error, setError] = useState("");
+  return (
+    <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage">
+      <div className="yard-subpage-intro"><small>区域与设备归属</small><h1>{yard.activeYard.areas.length} 个区域</h1><p>{canManage ? "区域会显示在设备页顶部，用于筛选设备。" : "当前页面为只读。"}</p></div>
+      <div className="yard-area-management-list">{yard.activeYard.areas.map((area) => <div key={area}><span><MapPin size={18} /><strong>{area}</strong></span>{canManage ? <button aria-label={`删除${area}`} onClick={() => { const result = yard.removeYardArea(yard.activeYardId, area); setError(result === "in-use" ? `请先移动${area}中的设备` : result === "last-area" ? "至少保留一个区域" : "区域删除失败"); }}>删除</button> : <small>只读</small>}</div>)}</div>
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {canManage ? <button className="primary-button" onClick={() => yard.notify("新增区域入口已准备")}>新增区域</button> : null}
+    </main></MobileScroll>
+  );
+}
+
+function membersScreen(): FlowScreen {
+  return detailScreen("yard-members", "家庭与成员", () => <MembersPage />);
+}
+
+function MembersPage() {
+  const yard = useYard();
+  return <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage"><div className="yard-subpage-intro"><small>庭院成员</small><h1>{yard.activeYard.members.length} 位成员</h1><p>每位成员的角色和可用权限都属于当前庭院。</p></div><div className="yard-member-list">{yard.activeYard.members.map((member) => <div key={member.id}><span><UserCircle size={22} /><strong>{member.name}</strong></span><small>{member.roleLabel}</small></div>)}</div></main></MobileScroll>;
+}
+
+function installerAuthorizationScreen(): FlowScreen {
+  return detailScreen("installer-authorization", "临时安装商权限", () => <InstallerAuthorizationPage />);
+}
+
+function InstallerAuthorizationPage() {
+  const yard = useYard();
+  const installers = yard.activeYard.members.filter((member) => member.role === "installer");
+  return <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage"><div className="yard-subpage-intro"><small>设备安装与诊断</small><h1>临时安装商权限</h1><p>授权范围只对当前庭院生效。</p></div><div className="yard-member-list">{installers.length ? installers.map((member) => <div key={member.id}><span><SlidersHorizontal size={22} /><strong>{member.name}</strong></span><small>{member.expiresAt ? `有效至 ${member.expiresAt.slice(0, 10)}` : "无期限"}</small></div>) : <div className="empty-state-card"><strong>暂无临时安装商</strong></div>}</div></main></MobileScroll>;
 }
 
 function addDeviceScreen(): FlowScreen {
