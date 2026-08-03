@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>首页视觉对照</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: #e9edf1; }
+      body {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: 40px;
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+      }
+      main { display: flex; gap: 32px; align-items: flex-start; }
+      figure { margin: 0; }
+      figcaption {
+        margin-bottom: 12px;
+        color: #17202a;
+        font-size: 18px;
+        font-weight: 700;
+        text-align: center;
+      }
+      img {
+        display: block;
+        width: 393px;
+        height: 809px;
+        border-radius: 20px;
+        box-shadow: 0 18px 44px rgba(28, 38, 48, 0.16);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <figure>
+        <figcaption>选定视觉方向</figcaption>
+        <img src="./source-home-visible.png" alt="选定视觉方向" />
+      </figure>
+      <figure>
+        <figcaption>可交互原型</figcaption>
+        <img src="./implementation-home-final.png" alt="可交互原型" />
+      </figure>
+    </main>
+  </body>
+</html>
