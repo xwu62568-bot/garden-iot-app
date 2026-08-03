@@ -69,6 +69,41 @@ type RootTab = "devices" | "scenes" | "automation" | "me";
 type AutomationTab = "schedule" | "linkage";
 type VisualMode = "night" | "warm";
 
+type YardRole = "owner" | "member" | "installer";
+
+type YardProfile = {
+  name: string;
+  city: string;
+  timezone: string;
+};
+
+type YardMembership = {
+  role: YardRole;
+  roleLabel: string;
+  expiresAt: string | null;
+  authorizedDeviceIds: string[];
+};
+
+type YardMember = {
+  id: string;
+  name: string;
+  role: YardRole;
+  roleLabel: string;
+  status: "active" | "expired";
+  expiresAt: string | null;
+  authorizedDeviceIds: string[];
+};
+
+type YardPermissions = {
+  controlDevices: boolean;
+  runScenes: boolean;
+  editScenes: boolean;
+  editAutomations: boolean;
+  addDevices: boolean;
+  configureController: boolean;
+  manageYard: boolean;
+};
+
 type RootTabState = {
   activeTab: RootTab;
   setActiveTab: (tab: RootTab) => void;
@@ -129,7 +164,41 @@ type LinkageDefinition = {
   enabled: boolean;
 };
 
+type LightStripState = {
+  id: "light";
+  name: string;
+  area: string;
+  visible: boolean;
+  on: boolean;
+  brightness: number;
+  effect: string;
+};
+
+type YardWorkspace = {
+  id: string;
+  profile: YardProfile;
+  membership: YardMembership;
+  members: YardMember[];
+  areas: string[];
+  light: LightStripState;
+  fountainOn: boolean;
+  gateOpen: boolean;
+  irrigationOn: boolean;
+  irrigationMode: string;
+  controllerChannels: ControllerChannel[];
+  scenes: SceneDefinition[];
+  schedules: ScheduleDefinition[];
+  linkages: LinkageDefinition[];
+  selectedArea: string;
+};
+
 type YardState = {
+  yards: YardWorkspace[];
+  activeYardId: string;
+  activeYard: YardWorkspace;
+  permissions: YardPermissions;
+  switchYard: (yardId: string) => "switched" | "missing";
+  setSelectedArea: (area: string) => void;
   lightOn: boolean;
   setLightOn: (value: boolean) => void;
   brightness: number;
@@ -201,6 +270,99 @@ const initialLinkages: LinkageDefinition[] = [
   { id: "pump-protection", name: "水泵超时保护", triggers: [{ deviceId: "pump", deviceName: "水泵", event: "持续运行 60 分钟" }], condition: null, actions: [{ deviceId: "pump", deviceName: "水泵", action: "关闭并通知所有者" }], enabled: false },
 ];
 
+const cloneControllerChannels = () => initialControllerChannels.map((channel) => ({ ...channel }));
+const cloneScenes = (scenes: SceneDefinition[]) => scenes.map((scene) => ({ ...scene }));
+const cloneSchedules = (schedules: ScheduleDefinition[]) => schedules.map((schedule) => ({ ...schedule }));
+const cloneLinkages = (linkages: LinkageDefinition[]) => linkages.map((linkage) => ({
+  ...linkage,
+  triggers: linkage.triggers.map((trigger) => ({ ...trigger })),
+  actions: linkage.actions.map((action) => ({ ...action })),
+}));
+
+const ownerMembers = (): YardMember[] => [
+  { id: "owner-lin", name: "林先生", role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] },
+  { id: "member-wang", name: "王女士", role: "member", roleLabel: "普通成员", status: "active", expiresAt: null, authorizedDeviceIds: ["light", "channel-1", "channel-2", "channel-3"] },
+  { id: "installer-service", name: "安装服务", role: "installer", roleLabel: "临时安装商", status: "active", expiresAt: "2026-08-31T23:59:59+08:00", authorizedDeviceIds: ["controller", "channel-1", "channel-2", "channel-3", "channel-4"] },
+];
+
+const makeOwnerYard = (): YardWorkspace => ({
+  id: "my-yard",
+  profile: { name: "我的庭院", city: "上海", timezone: "Asia/Shanghai" },
+  membership: { role: "owner", roleLabel: "所有者", expiresAt: null, authorizedDeviceIds: [] },
+  members: ownerMembers(),
+  areas: ["后院", "露台", "泳池", "前院", "车库"],
+  light: { id: "light", name: "露台灯带", area: "露台", visible: true, on: true, brightness: 68, effect: "日落流光" },
+  fountainOn: true,
+  gateOpen: false,
+  irrigationOn: false,
+  irrigationMode: "持续运行",
+  controllerChannels: cloneControllerChannels(),
+  scenes: cloneScenes(initialScenes),
+  schedules: cloneSchedules(initialSchedules),
+  linkages: cloneLinkages(initialLinkages),
+  selectedArea: "全部",
+});
+
+const makeParentChannels = (): ControllerChannel[] => cloneControllerChannels().map((channel) => {
+  if (channel.id === 1) return { ...channel, configured: true, name: "父母家庭院门", type: "庭院门", area: "花园", visible: true };
+  if (channel.id === 3) return { ...channel, configured: true, name: "花园灌溉", type: "灌溉", area: "花园", visible: true };
+  return { ...channel, configured: false, name: "未配置", type: "未配置", area: "未分配", visible: false };
+});
+
+const makeParentYard = (): YardWorkspace => ({
+  id: "parents-yard",
+  profile: { name: "父母家", city: "苏州", timezone: "Asia/Shanghai" },
+  membership: { role: "member", roleLabel: "普通成员", expiresAt: null, authorizedDeviceIds: ["light", "channel-1", "channel-3"] },
+  members: [
+    { id: "parent-owner", name: "陈女士", role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] },
+    { id: "current-member", name: "当前账户", role: "member", roleLabel: "普通成员", status: "active", expiresAt: null, authorizedDeviceIds: ["light", "channel-1", "channel-3"] },
+  ],
+  areas: ["门廊", "花园"],
+  light: { id: "light", name: "父母家廊灯", area: "门廊", visible: true, on: false, brightness: 52, effect: "暖白" },
+  fountainOn: false,
+  gateOpen: false,
+  irrigationOn: false,
+  irrigationMode: "持续运行",
+  controllerChannels: makeParentChannels(),
+  scenes: [{ id: "parent-home", name: "回家照明", detail: "廊灯与庭院门 · 2 个动作", icon: "sun" }, { id: "parent-off", name: "全部关闭", detail: "关闭廊灯与灌溉 · 2 个动作", icon: "power" }],
+  schedules: [{ id: "parent-sunset", name: "门廊日落开灯", timeType: "日落", timeValue: "日落时", repeat: "每天", deviceId: "light", deviceName: "父母家廊灯", action: "开启 · 暖白 52%", enabled: true }],
+  linkages: [{ id: "parent-gate-light", name: "回家开灯", triggers: [{ deviceId: "gate", deviceName: "父母家庭院门", event: "打开" }], condition: null, actions: [{ deviceId: "light", deviceName: "父母家廊灯", action: "开启 · 暖白 52%" }], enabled: true }],
+  selectedArea: "全部",
+});
+
+const makeInstallerYard = (): YardWorkspace => ({
+  id: "client-yard",
+  profile: { name: "客户庭院", city: "杭州", timezone: "Asia/Shanghai" },
+  membership: { role: "installer", roleLabel: "临时安装商", expiresAt: "2026-08-31T23:59:59+08:00", authorizedDeviceIds: ["controller", "channel-1", "channel-2", "channel-3", "channel-4"] },
+  members: [
+    { id: "client-owner", name: "周先生", role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] },
+    { id: "current-installer", name: "当前账户", role: "installer", roleLabel: "临时安装商", status: "active", expiresAt: "2026-08-31T23:59:59+08:00", authorizedDeviceIds: ["controller", "channel-1", "channel-2", "channel-3", "channel-4"] },
+  ],
+  areas: ["前院", "设备间", "车库"],
+  light: { id: "light", name: "设备间测试灯", area: "设备间", visible: false, on: false, brightness: 0, effect: "未配置" },
+  fountainOn: false,
+  gateOpen: false,
+  irrigationOn: false,
+  irrigationMode: "持续运行",
+  controllerChannels: cloneControllerChannels(),
+  scenes: [],
+  schedules: [],
+  linkages: [],
+  selectedArea: "全部",
+});
+
+const makeInitialYards = (): YardWorkspace[] => [makeOwnerYard(), makeParentYard(), makeInstallerYard()];
+
+const permissionsFor = (membership: YardMembership): YardPermissions => ({
+  controlDevices: membership.role !== "installer" || membership.authorizedDeviceIds.length > 0,
+  runScenes: membership.role !== "installer",
+  editScenes: membership.role === "owner",
+  editAutomations: membership.role === "owner",
+  addDevices: membership.role === "owner" || membership.role === "installer",
+  configureController: membership.role === "owner" || membership.role === "installer",
+  manageYard: membership.role === "owner",
+});
+
 function useYard() {
   const value = useContext(YardContext);
   if (!value) throw new Error("useYard must be used inside YardContext");
@@ -240,19 +402,78 @@ export default function Prototype() {
     new URLSearchParams(window.location.search).get("visual") === "warm" ? "warm" : "night",
   );
   const [activeTab, setActiveTab] = useState<RootTab>("devices");
-  const [lightOn, setLightOn] = useState(true);
-  const [brightness, setBrightness] = useState(68);
-  const [lightEffect, setLightEffect] = useState("日落流光");
-  const [fountainOn, setFountainOn] = useState(true);
-  const [gateOpen, setGateOpen] = useState(false);
-  const [irrigationOn, setIrrigationOn] = useState(false);
-  const [irrigationMode, setIrrigationMode] = useState("持续运行");
-  const [controllerChannels, setControllerChannels] = useState<ControllerChannel[]>(initialControllerChannels);
-  const [scenes, setScenes] = useState<SceneDefinition[]>(initialScenes);
-  const [schedules, setSchedules] = useState<ScheduleDefinition[]>(initialSchedules);
-  const [linkages, setLinkages] = useState<LinkageDefinition[]>(initialLinkages);
+  const [yards, setYards] = useState<YardWorkspace[]>(makeInitialYards);
+  const [activeYardId, setActiveYardId] = useState("my-yard");
   const [toast, setToast] = useState("");
   const toastTimer = useRef<number | null>(null);
+
+  const activeYard = yards.find((yard) => yard.id === activeYardId) ?? yards[0];
+  const permissions = permissionsFor(activeYard.membership);
+
+  const updateActiveYard = useCallback(
+    (updater: (yard: YardWorkspace) => YardWorkspace) => {
+      setYards((current) => current.map((yard) => yard.id === activeYardId ? updater(yard) : yard));
+    },
+    [activeYardId],
+  );
+
+  const switchYard = useCallback((yardId: string) => {
+    if (!yards.some((yard) => yard.id === yardId)) return "missing" as const;
+    setActiveYardId(yardId);
+    setActiveTab("devices");
+    return "switched" as const;
+  }, [yards]);
+
+  const setSelectedArea = useCallback((area: string) => {
+    updateActiveYard((yard) => ({ ...yard, selectedArea: area }));
+  }, [updateActiveYard]);
+
+  const setLightOn = useCallback((value: boolean) => {
+    updateActiveYard((yard) => ({ ...yard, light: { ...yard.light, on: value } }));
+  }, [updateActiveYard]);
+
+  const setBrightness = useCallback((value: number) => {
+    updateActiveYard((yard) => ({ ...yard, light: { ...yard.light, brightness: value } }));
+  }, [updateActiveYard]);
+
+  const setLightEffect = useCallback((value: string) => {
+    updateActiveYard((yard) => ({ ...yard, light: { ...yard.light, effect: value } }));
+  }, [updateActiveYard]);
+
+  const setFountainOn = useCallback((value: boolean) => {
+    updateActiveYard((yard) => ({ ...yard, fountainOn: value }));
+  }, [updateActiveYard]);
+
+  const setGateOpen = useCallback((value: boolean) => {
+    updateActiveYard((yard) => ({ ...yard, gateOpen: value }));
+  }, [updateActiveYard]);
+
+  const setIrrigationOn = useCallback((value: boolean) => {
+    updateActiveYard((yard) => ({ ...yard, irrigationOn: value }));
+  }, [updateActiveYard]);
+
+  const setIrrigationMode = useCallback((value: string) => {
+    updateActiveYard((yard) => ({ ...yard, irrigationMode: value }));
+  }, [updateActiveYard]);
+
+  const setControllerChannels = useCallback<YardState["setControllerChannels"]>((value) => {
+    updateActiveYard((yard) => ({
+      ...yard,
+      controllerChannels: typeof value === "function" ? value(yard.controllerChannels) : value,
+    }));
+  }, [updateActiveYard]);
+
+  const setScenes = useCallback<YardState["setScenes"]>((value) => {
+    updateActiveYard((yard) => ({ ...yard, scenes: typeof value === "function" ? value(yard.scenes) : value }));
+  }, [updateActiveYard]);
+
+  const setSchedules = useCallback<YardState["setSchedules"]>((value) => {
+    updateActiveYard((yard) => ({ ...yard, schedules: typeof value === "function" ? value(yard.schedules) : value }));
+  }, [updateActiveYard]);
+
+  const setLinkages = useCallback<YardState["setLinkages"]>((value) => {
+    updateActiveYard((yard) => ({ ...yard, linkages: typeof value === "function" ? value(yard.linkages) : value }));
+  }, [updateActiveYard]);
 
   const selectVisualMode = useCallback((mode: VisualMode) => {
     setVisualMode(mode);
@@ -278,54 +499,67 @@ export default function Prototype() {
   }, []);
 
   const runDinnerScene = useCallback(() => {
-    setLightOn(true);
-    setBrightness(68);
-    setLightEffect("日落流光");
-    setFountainOn(true);
+    updateActiveYard((yard) => ({
+      ...yard,
+      light: { ...yard.light, on: true, brightness: 68, effect: "日落流光" },
+      fountainOn: true,
+    }));
     notify("“花园晚宴”已执行 · 4 项成功");
-  }, [notify]);
+  }, [notify, updateActiveYard]);
 
   const state = useMemo<YardState>(
     () => ({
-      lightOn,
+      yards,
+      activeYardId,
+      activeYard,
+      permissions,
+      switchYard,
+      setSelectedArea,
+      lightOn: activeYard.light.on,
       setLightOn,
-      brightness,
+      brightness: activeYard.light.brightness,
       setBrightness,
-      lightEffect,
+      lightEffect: activeYard.light.effect,
       setLightEffect,
-      fountainOn,
+      fountainOn: activeYard.fountainOn,
       setFountainOn,
-      gateOpen,
+      gateOpen: activeYard.gateOpen,
       setGateOpen,
-      irrigationOn,
+      irrigationOn: activeYard.irrigationOn,
       setIrrigationOn,
-      irrigationMode,
+      irrigationMode: activeYard.irrigationMode,
       setIrrigationMode,
-      controllerChannels,
+      controllerChannels: activeYard.controllerChannels,
       setControllerChannels,
-      scenes,
+      scenes: activeYard.scenes,
       setScenes,
-      schedules,
+      schedules: activeYard.schedules,
       setSchedules,
-      linkages,
+      linkages: activeYard.linkages,
       setLinkages,
       notify,
       runDinnerScene,
     }),
     [
-      brightness,
-      fountainOn,
-      gateOpen,
-      irrigationMode,
-      irrigationOn,
-      controllerChannels,
-      scenes,
-      schedules,
-      linkages,
-      lightEffect,
-      lightOn,
+      activeYard,
+      activeYardId,
+      yards,
+      permissions,
       notify,
       runDinnerScene,
+      setBrightness,
+      setControllerChannels,
+      setFountainOn,
+      setGateOpen,
+      setIrrigationMode,
+      setIrrigationOn,
+      setLightEffect,
+      setLightOn,
+      setLinkages,
+      setScenes,
+      setSchedules,
+      setSelectedArea,
+      switchYard,
     ],
   );
 
@@ -333,7 +567,7 @@ export default function Prototype() {
     <VisualModeContext.Provider value={visualMode}>
       <RootTabContext.Provider value={{ activeTab, setActiveTab }}>
         <YardContext.Provider value={state}>
-          <div className={`yard-app visual-${visualMode}`} data-testid="yard-app" data-visual={visualMode}>
+          <div className={`yard-app visual-${visualMode}`} data-testid="yard-app" data-visual={visualMode} data-yard-id={activeYard.id}>
             <FlowStack key={visualMode} initial={makeRootScreen(visualMode)} />
             {toast ? (
               <div className="app-toast" role="status" data-testid="app-toast">
@@ -394,9 +628,11 @@ function AppTopBar({
   action?: { label: string; onClick: () => void; testId?: string };
 }) {
   const visualMode = useVisualMode();
+  const yard = useYard();
+  const displayedTitle = selectable ? yard.activeYard.profile.name : title;
   const heading = (
     <span>
-      <strong>{title}</strong>
+      <strong data-testid={selectable ? "active-yard-name" : undefined}>{displayedTitle}</strong>
       {subtitle ? <small>{subtitle}</small> : null}
     </span>
   );
@@ -452,12 +688,13 @@ function NightDevicesTop({ flow }: { flow: FlowControls }) {
 }
 
 function WarmDevicesTop({ flow }: { flow: FlowControls }) {
+  const yard = useYard();
   return (
     <section className="warm-devices-top" aria-label="庭院运行状态">
       <img className="warm-devices-hero-image" src={publicAsset("assets/app/warm-garden-hero-faded.png")} alt="黄昏庭院花园与庭院门" draggable={false} />
       <header className="warm-devices-topbar">
         <button className="warm-yard-selector" aria-label="切换庭院">
-          <strong>我的庭院</strong>
+          <strong data-testid="active-yard-name">{yard.activeYard.profile.name}</strong>
           <CaretDown size={18} weight="bold" />
         </button>
         <div className="warm-topbar-actions">
