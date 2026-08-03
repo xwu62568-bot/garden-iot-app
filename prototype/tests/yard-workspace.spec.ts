@@ -32,3 +32,25 @@ for (const visual of ["night", "warm"] as const) {
     await expect(page.getByRole("status")).toContainText("已切换至父母家");
   });
 }
+
+test("yard data and permissions stay isolated across all root tabs", async ({ page }) => {
+  await openPrototype(page);
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: /切换到父母家/ }).click();
+
+  await expect(page.getByRole("button", { name: "后院" })).toHaveCount(0);
+  await page.getByTestId("tab-scenes").click();
+  await expect(page.getByText("父母家", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("create-scene")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /点击立即执行/ }).first()).toBeEnabled();
+
+  await page.getByTestId("tab-automation").click();
+  await expect(page.getByTestId("create-schedule")).toHaveCount(0);
+  await expect(page.getByRole("switch").first()).toBeDisabled();
+
+  await page.getByTestId("tab-devices").click();
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: /切换到我的庭院/ }).click();
+  await expect(page.getByText("露台灯带", { exact: true })).toBeVisible();
+  await expect(page.getByText("父母家廊灯", { exact: true })).toHaveCount(0);
+});

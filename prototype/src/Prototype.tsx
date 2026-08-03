@@ -822,7 +822,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
   const [gateSheet, setGateSheet] = useState(false);
   const [irrigationSheet, setIrrigationSheet] = useState(false);
   const area = yard.activeYard.selectedArea;
-  const areas = ["全部", "后院", "露台", "泳池"];
+  const areas = ["全部", ...yard.activeYard.areas];
   const fountainChannel = yard.controllerChannels.find((channel) => channel.id === 2);
   const gateChannel = yard.controllerChannels.find((channel) => channel.id === 1);
   const irrigationChannel = yard.controllerChannels.find((channel) => channel.id === 3);
@@ -848,19 +848,19 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
           </Carousel>
 
           <section className="device-list" aria-label={`${area}设备`}>
-            <article className="device-card light-card" data-testid="device-lightstrip">
+            {yard.activeYard.light.visible ? <article className="device-card light-card" data-testid="device-lightstrip">
               <button
                 className="device-card-main"
-                onClick={() => flow.push(detailScreen("light-detail", "露台灯带", () => <LightDetail />))}
-                aria-label="打开露台灯带详情"
+                onClick={() => flow.push(detailScreen("light-detail", yard.activeYard.light.name, () => <LightDetail />))}
+                aria-label={`打开${yard.activeYard.light.name}详情`}
               >
                 {isWarm ? (
-                  <img className="device-thumb pictogram warm-pictogram" src={publicAsset("assets/app/icons/warm/lightstrip.png")} alt="露台灯带图标" draggable={false} />
+                  <img className="device-thumb pictogram warm-pictogram" src={publicAsset("assets/app/icons/warm/lightstrip.png")} alt={`${yard.activeYard.light.name}图标`} draggable={false} />
                 ) : (
-                  <img className="device-thumb photo" src={publicAsset("assets/app/sunset-strip-thumbnail.png")} alt="日落流光灯带" draggable={false} />
+                  <img className="device-thumb photo" src={publicAsset("assets/app/sunset-strip-thumbnail.png")} alt={`${yard.activeYard.light.name}效果`} draggable={false} />
                 )}
                 <span className="device-copy">
-                  <span className="device-title">露台灯带</span>
+                  <span className="device-title">{yard.activeYard.light.name}</span>
                   <span className={`device-state ${yard.lightOn ? "on" : ""}`}>
                     <i />{yard.lightOn ? "已开启" : "已关闭"}
                   </span>
@@ -882,7 +882,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 <span className="warm-light-actions">
                   <img className="warm-effect-swatch" src={publicAsset("assets/app/sunset-card-glow.png")} alt="日落流光效果" draggable={false} />
                   <Switch
-                    label="露台灯带开关"
+                    label={`${yard.activeYard.light.name}开关`}
                     value={yard.lightOn}
                     onChange={(value) => {
                       yard.setLightOn(value);
@@ -892,7 +892,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 </span>
               ) : (
                 <Switch
-                  label="露台灯带开关"
+                  label={`${yard.activeYard.light.name}开关`}
                   value={yard.lightOn}
                   onChange={(value) => {
                     yard.setLightOn(value);
@@ -909,7 +909,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 aria-hidden="true"
                 draggable={false}
               />
-            </article>
+            </article> : null}
 
             {fountainChannel?.configured && fountainChannel.visible ? <article className="device-card" data-testid="device-fountain">
               <button
@@ -1194,15 +1194,17 @@ function AddDevicePage({ flow }: { flow: FlowControls }) {
   );
 }
 
-function Switch({ label, value, onChange }: { label: string; value: boolean; onChange: (value: boolean) => void }) {
+function Switch({ label, value, onChange, disabled = false }: { label: string; value: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       role="switch"
       aria-label={label}
       aria-checked={value}
+      aria-disabled={disabled}
+      disabled={disabled}
       className={`app-switch ${value ? "on" : ""}`}
-      onClick={() => onChange(!value)}
+      onClick={() => !disabled && onChange(!value)}
     >
       <span />
     </button>
@@ -1527,10 +1529,12 @@ function LogRows({ items }: { items: string[] }) {
 
 function ScenesHome({ flow }: { flow: FlowControls }) {
   const yard = useYard();
+  const canRun = yard.permissions.runScenes;
+  const canEdit = yard.permissions.editScenes;
   return (
     <MobileScroll className="app-screen dark-screen">
       <main className="root-page standard-page">
-        <AppTopBar title="场景" subtitle="我的庭院" action={{ label: "新建场景", testId: "create-scene", onClick: () => flow.push(sceneEditorScreen()) }} />
+        <AppTopBar title="场景" subtitle={yard.activeYard.profile.name} action={canEdit ? { label: "新建场景", testId: "create-scene", onClick: () => flow.push(sceneEditorScreen()) } : undefined} />
         <section className="feature-banner scene-banner">
           <span><MagicWand size={28} weight="duotone" /></span>
           <div><small>常用场景</small><strong>让庭院进入理想状态</strong><p>灯光、水景和门控按顺序执行</p></div>
@@ -1538,16 +1542,16 @@ function ScenesHome({ flow }: { flow: FlowControls }) {
         <section className="content-section flush-section">
           <div className="section-title"><span>我的场景</span><button>排序</button></div>
           <div className="scene-list">
-            {yard.scenes.map((scene, index) => (
+            {yard.scenes.length ? yard.scenes.map((scene, index) => (
               <article key={scene.name} className="scene-card">
-                <button className="scene-play" data-testid={scene.id === "dinner" ? "scene-run-dinner" : undefined} onClick={() => scene.id === "dinner" ? yard.runDinnerScene() : yard.notify(`“${scene.name}”已执行`)}>
+                <button className="scene-play" data-testid={scene.id === "dinner" ? "scene-run-dinner" : undefined} disabled={!canRun} onClick={() => canRun && (scene.id === "dinner" ? yard.runDinnerScene() : yard.notify(`“${scene.name}”已执行`))}>
                   <span className={`scene-icon scene-icon-${index % 3}`}>{scene.icon === "sparkle" ? <Sparkle size={25} /> : scene.icon === "sun" ? <SunHorizon size={25} /> : <Power size={25} />}</span>
                   <span><strong>{scene.name}</strong><small>{scene.detail}</small><em>{scene.id === "dinner" ? "上次执行：今天 19:32 · 成功" : "点击立即执行"}</em></span>
                   <Play size={19} weight="fill" />
                 </button>
-                <button className="more-button" aria-label={`编辑${scene.name}`} onClick={() => flow.push(sceneEditorScreen(scene.name))}><DotsThree size={22} /></button>
+                {canEdit ? <button className="more-button" aria-label={`编辑${scene.name}`} onClick={() => flow.push(sceneEditorScreen(scene.name))}><DotsThree size={22} /></button> : null}
               </article>
-            ))}
+            )) : <div className="empty-state-card"><Sparkle size={28} /><strong>还没有场景</strong><small>创建一个场景，让多个庭院设备一起行动。</small></div>}
           </div>
         </section>
         <section className="content-section flush-section">
@@ -1671,6 +1675,7 @@ function SceneEditor({ flow, existingName }: { flow: FlowControls; existingName:
 
 function AutomationHome({ flow }: { flow: FlowControls }) {
   const yard = useYard();
+  const canEdit = yard.permissions.editAutomations;
   const [tab, setTab] = useState<AutomationTab>("schedule");
   const rules = tab === "schedule"
     ? yard.schedules.map((schedule) => ({
@@ -1688,26 +1693,26 @@ function AutomationHome({ flow }: { flow: FlowControls }) {
   return (
     <MobileScroll className="app-screen dark-screen">
       <main className="root-page standard-page">
-        <AppTopBar title="自动化" subtitle="我的庭院" action={{ label: `新建${tab === "schedule" ? "定时" : "联动"}`, testId: tab === "schedule" ? "create-schedule" : "create-linkage", onClick: () => flow.push(tab === "schedule" ? scheduleEditorScreen() : linkageEditorScreen()) }} />
+        <AppTopBar title="自动化" subtitle={yard.activeYard.profile.name} action={canEdit ? { label: `新建${tab === "schedule" ? "定时" : "联动"}`, testId: tab === "schedule" ? "create-schedule" : "create-linkage", onClick: () => flow.push(tab === "schedule" ? scheduleEditorScreen() : linkageEditorScreen()) } : undefined} />
         <div className="automation-tabs" role="tablist"><button aria-selected={tab === "schedule"} onClick={() => setTab("schedule")}>定时</button><button aria-selected={tab === "linkage"} onClick={() => setTab("linkage")}>联动</button></div>
         <section className="automation-status"><ShieldCheck size={23} weight="duotone" /><span><strong>{tab === "schedule" ? `${yard.schedules.filter((schedule) => schedule.enabled).length} 个定时正常运行` : `${yard.linkages.filter((linkage) => linkage.enabled).length} 个联动正常运行`}</strong><small>过去 24 小时没有执行失败</small></span><button>执行记录</button></section>
         <section className="rule-list">
-          {rules.map((rule) => <AutomationRuleCard key={rule.name} rule={rule} type={tab} defaultEnabled={rule.enabled} flow={flow} onEnabledChange={tab === "schedule" ? (enabled) => yard.setSchedules((current) => current.map((schedule) => schedule.name === rule.name ? { ...schedule, enabled } : schedule)) : (enabled) => yard.setLinkages((current) => current.map((linkage) => linkage.name === rule.name ? { ...linkage, enabled } : linkage))} />)}
+          {rules.length ? rules.map((rule) => <AutomationRuleCard key={rule.name} rule={rule} type={tab} defaultEnabled={rule.enabled} flow={flow} readOnly={!canEdit} onEnabledChange={tab === "schedule" ? (enabled) => yard.setSchedules((current) => current.map((schedule) => schedule.name === rule.name ? { ...schedule, enabled } : schedule)) : (enabled) => yard.setLinkages((current) => current.map((linkage) => linkage.name === rule.name ? { ...linkage, enabled } : linkage))} />) : <div className="empty-state-card"><Timer size={28} /><strong>{tab === "schedule" ? "还没有定时" : "还没有联动"}</strong><small>{canEdit ? "创建第一条自动化规则。" : "当前庭院还没有可查看的规则。"}</small></div>}
         </section>
       </main>
     </MobileScroll>
   );
 }
 
-function AutomationRuleCard({ rule, type, defaultEnabled, flow, onEnabledChange }: { rule: { name: string; summary: string; meta: string }; type: AutomationTab; defaultEnabled: boolean; flow: FlowControls; onEnabledChange?: (enabled: boolean) => void }) {
+function AutomationRuleCard({ rule, type, defaultEnabled, flow, readOnly = false, onEnabledChange }: { rule: { name: string; summary: string; meta: string }; type: AutomationTab; defaultEnabled: boolean; flow: FlowControls; readOnly?: boolean; onEnabledChange?: (enabled: boolean) => void }) {
   const [enabled, setEnabled] = useState(defaultEnabled);
   return (
     <article className="rule-card">
       <span className="rule-icon">{type === "schedule" ? <Calendar size={24} /> : <FlowArrow size={24} />}</span>
-      <button className="rule-main" onClick={() => flow.push(type === "schedule" ? scheduleEditorScreen(rule.name) : linkageEditorScreen(rule.name))}>
+      <button className="rule-main" disabled={readOnly} onClick={() => !readOnly && flow.push(type === "schedule" ? scheduleEditorScreen(rule.name) : linkageEditorScreen(rule.name))}>
         <strong>{rule.name}</strong><p>{rule.summary}</p><small>{rule.meta}</small>
       </button>
-      <Switch label={`${rule.name}启用状态`} value={enabled} onChange={(value) => { setEnabled(value); onEnabledChange?.(value); }} />
+      <Switch disabled={readOnly} label={`${rule.name}启用状态`} value={enabled} onChange={(value) => { setEnabled(value); onEnabledChange?.(value); }} />
     </article>
   );
 }
