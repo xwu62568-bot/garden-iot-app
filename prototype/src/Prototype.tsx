@@ -84,6 +84,21 @@ type CreateYardInput = {
   areas: string[];
 };
 
+type InvitePreview = {
+  code: string;
+  yardName: string;
+  inviter: string;
+  city: string;
+  timezone: string;
+  role: YardRole;
+  roleLabel: string;
+  validUntil: string;
+};
+
+type InviteLookupResult =
+  | { status: "ready"; invite: InvitePreview }
+  | { status: "invalid" | "expired" | "joined"; message: string };
+
 type YardMembership = {
   role: YardRole;
   roleLabel: string;
@@ -207,6 +222,8 @@ type YardState = {
   switchYard: (yardId: string) => "switched" | "missing";
   setSelectedArea: (area: string) => void;
   createYard: (input: CreateYardInput) => string;
+  lookupInvite: (code: string) => InviteLookupResult;
+  acceptInvite: (invite: InvitePreview) => string;
   lightOn: boolean;
   setLightOn: (value: boolean) => void;
   brightness: number;
@@ -379,6 +396,24 @@ const makeEmptyOwnerYard = (id: string, input: CreateYardInput): YardWorkspace =
   selectedArea: "全部",
 });
 
+const makeEmptyMemberYard = (id: string, invite: InvitePreview): YardWorkspace => ({
+  id,
+  profile: { name: invite.yardName, city: invite.city, timezone: invite.timezone },
+  membership: { role: invite.role, roleLabel: invite.roleLabel, expiresAt: invite.validUntil, authorizedDeviceIds: ["light", "channel-1", "channel-2"] },
+  members: [{ id: "invite-owner", name: invite.inviter, role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] }, { id: "invite-member", name: "当前账户", role: invite.role, roleLabel: invite.roleLabel, status: "active", expiresAt: invite.validUntil, authorizedDeviceIds: ["light", "channel-1", "channel-2"] }],
+  areas: ["前院", "后院"],
+  light: { id: "light", name: "四季庭院灯带", area: "前院", visible: true, on: false, brightness: 60, effect: "暖白" },
+  fountainOn: false,
+  gateOpen: false,
+  irrigationOn: false,
+  irrigationMode: "持续运行",
+  controllerChannels: cloneControllerChannels().map((channel) => channel.id <= 2 ? { ...channel, configured: true, visible: true } : { ...channel, configured: false, name: "未配置", type: "未配置", area: "未分配", visible: false }),
+  scenes: [],
+  schedules: [],
+  linkages: [],
+  selectedArea: "全部",
+});
+
 const permissionsFor = (membership: YardMembership): YardPermissions => ({
   controlDevices: membership.role !== "installer" || membership.authorizedDeviceIds.length > 0,
   runScenes: membership.role !== "installer",
@@ -457,6 +492,24 @@ export default function Prototype() {
   const createYard = useCallback((input: CreateYardInput) => {
     const id = `yard-${Date.now()}`;
     setYards((current) => [...current, makeEmptyOwnerYard(id, input)]);
+    setActiveYardId(id);
+    setActiveTab("devices");
+    return id;
+  }, []);
+
+  const lookupInvite = useCallback((code: string): InviteLookupResult => {
+    const normalized = code.trim().toUpperCase();
+    if (normalized === "GARDEN-NEW") {
+      return { status: "ready", invite: { code: normalized, yardName: "四季庭院", inviter: "赵先生", city: "杭州", timezone: "Asia/Shanghai", role: "member", roleLabel: "普通成员", validUntil: "2026-12-31T23:59:59+08:00" } };
+    }
+    if (normalized === "EXPIRED-2026") return { status: "expired", message: "邀请码已过期" };
+    if (normalized === "PARENTS-2026") return { status: "joined", message: "你已加入该庭院" };
+    return { status: "invalid", message: "邀请码无效" };
+  }, []);
+
+  const acceptInvite = useCallback((invite: InvitePreview) => {
+    const id = `yard-${Date.now()}`;
+    setYards((current) => [...current, makeEmptyMemberYard(id, invite)]);
     setActiveYardId(id);
     setActiveTab("devices");
     return id;
@@ -550,6 +603,8 @@ export default function Prototype() {
       switchYard,
       setSelectedArea,
       createYard,
+      lookupInvite,
+      acceptInvite,
       lightOn: activeYard.light.on,
       setLightOn,
       brightness: activeYard.light.brightness,
@@ -581,6 +636,8 @@ export default function Prototype() {
       yards,
       permissions,
       createYard,
+      lookupInvite,
+      acceptInvite,
       notify,
       runDinnerScene,
       setBrightness,
@@ -1046,7 +1103,10 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
           setYardSwitcherOpen(false);
           flow.push(createYardScreen());
         }}
-        onJoin={() => yard.notify("加入庭院流程即将开始")}
+        onJoin={() => {
+          setYardSwitcherOpen(false);
+          flow.push(joinYardScreen());
+        }}
         onManage={() => yard.notify("庭院管理即将打开")}
       />
 
@@ -1277,6 +1337,119 @@ function WarmCreateYardView(props: CreateYardViewProps) {
         <div className="yard-create-footer"><button className="secondary-button" onClick={props.onBack}>返回</button>{props.step < 4 ? <button className="primary-button" data-testid="create-yard-next" onClick={props.onNext}>下一步<CaretRight size={17} /></button> : <button className="primary-button" data-testid="finish-create-yard" onClick={props.onFinish}>完成创建</button>}</div>
       </main>
     </MobileScroll>
+  );
+}
+
+function joinYardScreen(): FlowScreen {
+  return {
+    id: "join-yard",
+    headerHeight: 58,
+    header: (flow) => <JoinYardHeader flow={flow} />,
+    render: (flow) => <JoinYardFlow flow={flow} />,
+  };
+}
+
+function JoinYardHeader({ flow }: { flow: FlowControls }) {
+  const visualMode = useVisualMode();
+  return (
+    <div className={`detail-header ${visualMode === "warm" ? "warm-yard-create-header" : "night-yard-create-header"}`}>
+      <button aria-label="返回" onClick={() => flow.pop()}><ArrowLeft size={22} /></button>
+      <strong>加入庭院</strong>
+      <span aria-hidden="true" />
+    </div>
+  );
+}
+
+type JoinYardViewProps = {
+  code: string;
+  preview: InvitePreview | null;
+  error: string;
+  onCodeChange: (value: string) => void;
+  onLookup: () => void;
+  onScan: () => void;
+  onAccept: () => void;
+  onBack: () => void;
+};
+
+function JoinYardFlow({ flow }: { flow: FlowControls }) {
+  const yard = useYard();
+  const visualMode = useVisualMode();
+  const keyboard = useKeyboard();
+  const [code, setCode] = useState("");
+  const [preview, setPreview] = useState<InvitePreview | null>(null);
+  const [error, setError] = useState("");
+
+  const lookup = () => {
+    keyboard.hide();
+    const result = yard.lookupInvite(code);
+    if (result.status === "ready") {
+      setPreview(result.invite);
+      setError("");
+    } else {
+      setPreview(null);
+      setError(result.message);
+    }
+  };
+
+  const accept = () => {
+    if (!preview) return;
+    keyboard.hide();
+    yard.acceptInvite(preview);
+    yard.notify(`已加入${preview.yardName}`);
+    flow.pop();
+  };
+
+  const props: JoinYardViewProps = {
+    code,
+    preview,
+    error,
+    onCodeChange: (value) => { setCode(value); setError(""); setPreview(null); },
+    onLookup: lookup,
+    onScan: () => { setCode("GARDEN-NEW"); setError(""); setPreview(null); },
+    onAccept: accept,
+    onBack: () => { keyboard.hide(); flow.pop(); },
+  };
+
+  return visualMode === "warm" ? <WarmJoinYardView {...props} /> : <NightJoinYardView {...props} />;
+}
+
+function NightJoinYardView(props: JoinYardViewProps) {
+  return (
+    <MobileScroll className="app-screen dark-screen">
+      <main className="detail-page yard-create-page night-yard-create-page join-yard-page">
+        <div className="yard-create-intro"><small>连接一个已有庭院</small><h1>输入邀请码</h1><p>向庭院所有者索取邀请码，确认后即可加入。</p></div>
+        <div className="mobile-field"><label className="field-label" htmlFor="join-yard-code">邀请码</label><KeyboardInput id="join-yard-code" data-testid="join-yard-code" value={props.code} placeholder="例如：GARDEN-NEW" enterKeyHint="done" onChange={(event) => props.onCodeChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") props.onLookup(); }} /></div>
+        <div className="join-yard-actions"><button className="primary-button" data-testid="lookup-invite" onClick={props.onLookup}>查看邀请</button><button className="secondary-button" onClick={props.onScan}><QrCode size={18} />扫描二维码</button></div>
+        {props.error ? <p className="form-error" role="alert">{props.error}</p> : null}
+        {props.preview ? <InvitePreviewCard preview={props.preview} visual="night" onAccept={props.onAccept} /> : null}
+        <button className="secondary-button" onClick={props.onBack}>返回</button>
+      </main>
+    </MobileScroll>
+  );
+}
+
+function WarmJoinYardView(props: JoinYardViewProps) {
+  return (
+    <MobileScroll className="app-screen dark-screen">
+      <main className="detail-page yard-create-page warm-yard-create-page join-yard-page">
+        <div className="yard-create-intro"><small>加入一个庭院空间</small><h1>输入邀请码</h1><p>确认庭院、角色和授权期限后再加入。</p></div>
+        <div className="mobile-field"><label className="field-label" htmlFor="join-yard-code">邀请码</label><KeyboardInput id="join-yard-code" data-testid="join-yard-code" value={props.code} placeholder="例如：GARDEN-NEW" enterKeyHint="done" onChange={(event) => props.onCodeChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") props.onLookup(); }} /></div>
+        <div className="join-yard-actions"><button className="primary-button" data-testid="lookup-invite" onClick={props.onLookup}>查看邀请</button><button className="secondary-button" onClick={props.onScan}><QrCode size={18} />扫描二维码</button></div>
+        {props.error ? <p className="form-error" role="alert">{props.error}</p> : null}
+        {props.preview ? <InvitePreviewCard preview={props.preview} visual="warm" onAccept={props.onAccept} /> : null}
+        <button className="secondary-button" onClick={props.onBack}>返回</button>
+      </main>
+    </MobileScroll>
+  );
+}
+
+function InvitePreviewCard({ preview, visual, onAccept }: { preview: InvitePreview; visual: "night" | "warm"; onAccept: () => void }) {
+  return (
+    <section className={`${visual}-invite-preview`}>
+      <div className="invite-preview-heading"><span><House size={22} /></span><div><small>邀请你加入</small><strong>{preview.yardName}</strong></div></div>
+      <div className="invite-preview-grid"><div><span>邀请人</span><strong>{preview.inviter}</strong></div><div><span>角色</span><strong>{preview.roleLabel}</strong></div><div><span>所在地</span><strong>{preview.city}</strong></div><div><span>有效期</span><strong>{preview.validUntil.slice(0, 10)}</strong></div></div>
+      <button className="primary-button" data-testid="accept-invite" onClick={onAccept}>确认加入</button>
+    </section>
   );
 }
 

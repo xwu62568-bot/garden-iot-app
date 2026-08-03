@@ -4139,3 +4139,104 @@ button {
   gap: 9px;
   margin-top: 28px;
 }
+
+.join-yard-page .join-yard-actions {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 16px;
+}
+
+.night-invite-preview,
+.warm-invite-preview {
+  display: grid;
+  gap: 15px;
+  margin: 18px 0;
+  padding: 16px;
+  border-radius: 17px;
+}
+
+.night-invite-preview {
+  border: 1px solid #344859;
+  color: #eef4fa;
+  background: #111c28;
+}
+
+.warm-invite-preview {
+  border: 1px solid #dfe8dc;
+  color: #203923;
+  background: #fffefb;
+  box-shadow: 0 8px 22px rgb(75 61 36 / 8%);
+}
+
+.invite-preview-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.invite-preview-heading > span {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.night-invite-preview .invite-preview-heading > span {
+  color: #f0b45a;
+  background: rgb(217 154 62 / 13%);
+}
+
+.warm-invite-preview .invite-preview-heading > span {
+  color: #315f35;
+  background: #eaf2e7;
+}
+
+.invite-preview-heading div {
+  display: grid;
+  gap: 3px;
+}
+
+.invite-preview-heading small,
+.invite-preview-grid span {
+  font-size: 9px;
+}
+
+.night-invite-preview .invite-preview-heading small,
+.night-invite-preview .invite-preview-grid span {
+  color: #8294a7;
+}
+
+.warm-invite-preview .invite-preview-heading small,
+.warm-invite-preview .invite-preview-grid span {
+  color: #7d877d;
+}
+
+.invite-preview-heading strong {
+  font-size: 16px;
+}
+
+.invite-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+}
+
+.invite-preview-grid div {
+  display: grid;
+  gap: 4px;
+}
+
+.invite-preview-grid strong {
+  font-size: 11px;
+}
+
+.night-invite-preview .primary-button {
+  color: #101820;
+  background: #d99a3e;
+}
+
+.warm-invite-preview .primary-button {
+  color: #fff;
+  background: #315f35;
+}

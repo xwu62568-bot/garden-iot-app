@@ -78,3 +78,30 @@ test("creates an empty yard with location timezone and initial areas", async ({ 
   await page.getByTestId("tab-automation").click();
   await expect(page.getByText("还没有定时")).toBeVisible();
 });
+
+test("joins a yard from a valid invitation", async ({ page }) => {
+  await openPrototype(page);
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: "加入庭院" }).click();
+  await page.getByTestId("join-yard-code").fill("GARDEN-NEW");
+  await page.getByTestId("lookup-invite").click();
+  await expect(page.getByText("四季庭院", { exact: true })).toBeVisible();
+  await expect(page.getByText(/普通成员/).first()).toBeVisible();
+  await page.getByTestId("accept-invite").click();
+  await expect(page.getByTestId("active-yard-name")).toHaveText("四季庭院");
+});
+
+for (const entry of [
+  { code: "NOT-FOUND", message: "邀请码无效" },
+  { code: "EXPIRED-2026", message: "邀请码已过期" },
+  { code: "PARENTS-2026", message: "你已加入该庭院" },
+]) {
+  test(`shows ${entry.message}`, async ({ page }) => {
+    await openPrototype(page);
+    await page.getByRole("button", { name: "切换庭院" }).click();
+    await page.getByRole("button", { name: "加入庭院" }).click();
+    await page.getByTestId("join-yard-code").fill(entry.code);
+    await page.getByTestId("lookup-invite").click();
+    await expect(page.getByRole("alert")).toHaveText(entry.message);
+  });
+}
