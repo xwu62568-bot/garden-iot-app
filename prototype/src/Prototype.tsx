@@ -221,7 +221,7 @@ type YardState = {
   activeYardId: string;
   activeYard: YardWorkspace;
   permissions: YardPermissions;
-  switchYard: (yardId: string) => "switched" | "missing";
+  switchYard: (yardId: string) => "switched" | "expired" | "missing";
   setSelectedArea: (area: string) => void;
   createYard: (input: CreateYardInput) => string;
   lookupInvite: (code: string) => InviteLookupResult;
@@ -230,6 +230,7 @@ type YardState = {
   addYardArea: (yardId: string, name: string) => boolean;
   renameYardArea: (yardId: string, oldName: string, newName: string) => boolean;
   removeYardArea: (yardId: string, name: string) => RemoveAreaResult;
+  updateInstallerAuthorization: (yardId: string, memberId: string, deviceIds: string[], expiresAt: string) => void;
   lightOn: boolean;
   setLightOn: (value: boolean) => void;
   brightness: number;
@@ -430,6 +431,9 @@ const permissionsFor = (membership: YardMembership): YardPermissions => ({
   manageYard: membership.role === "owner",
 });
 
+const isMembershipExpired = (membership: YardMembership, now = Date.now()) =>
+  Boolean(membership.expiresAt && new Date(membership.expiresAt).getTime() <= now);
+
 function useYard() {
   const value = useContext(YardContext);
   if (!value) throw new Error("useYard must be used inside YardContext");
@@ -485,7 +489,9 @@ export default function Prototype() {
   );
 
   const switchYard = useCallback((yardId: string) => {
-    if (!yards.some((yard) => yard.id === yardId)) return "missing" as const;
+    const target = yards.find((yard) => yard.id === yardId);
+    if (!target) return "missing" as const;
+    if (isMembershipExpired(target.membership)) return "expired" as const;
     setActiveYardId(yardId);
     setActiveTab("devices");
     return "switched" as const;
@@ -558,6 +564,18 @@ export default function Prototype() {
     setYards((current) => current.map((yard) => yard.id === yardId ? { ...yard, areas: yard.areas.filter((area) => area !== name), selectedArea: yard.selectedArea === name ? "全部" : yard.selectedArea } : yard));
     return "removed";
   }, [yards]);
+
+  const updateInstallerAuthorization = useCallback((yardId: string, memberId: string, deviceIds: string[], expiresAt: string) => {
+    setYards((current) => current.map((yard) => {
+      if (yard.id !== yardId) return yard;
+      return {
+        ...yard,
+        members: yard.members.map((member) => member.id === memberId && member.role === "installer"
+          ? { ...member, authorizedDeviceIds: [...deviceIds], expiresAt, status: "active" as const }
+          : member),
+      };
+    }));
+  }, []);
 
   const setLightOn = useCallback((value: boolean) => {
     updateActiveYard((yard) => ({ ...yard, light: { ...yard.light, on: value } }));
@@ -653,6 +671,7 @@ export default function Prototype() {
       addYardArea,
       renameYardArea,
       removeYardArea,
+      updateInstallerAuthorization,
       lightOn: activeYard.light.on,
       setLightOn,
       brightness: activeYard.light.brightness,
@@ -690,6 +709,7 @@ export default function Prototype() {
       addYardArea,
       renameYardArea,
       removeYardArea,
+      updateInstallerAuthorization,
       notify,
       runDinnerScene,
       setBrightness,
@@ -1149,6 +1169,9 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
           if (result === "switched" && target) {
             setYardSwitcherOpen(false);
             yard.notify(`已切换至${target.profile.name}`);
+          } else if (result === "expired") {
+            setYardSwitcherOpen(false);
+            yard.notify("授权已到期，无法进入客户庭院");
           }
         }}
         onCreate={() => {
@@ -1619,8 +1642,36 @@ function installerAuthorizationScreen(): FlowScreen {
 
 function InstallerAuthorizationPage() {
   const yard = useYard();
+  const canManage = yard.permissions.manageYard;
   const installers = yard.activeYard.members.filter((member) => member.role === "installer");
-  return <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage"><div className="yard-subpage-intro"><small>设备安装与诊断</small><h1>临时安装商权限</h1><p>授权范围只对当前庭院生效。</p></div><div className="yard-member-list">{installers.length ? installers.map((member) => <div key={member.id}><span><SlidersHorizontal size={22} /><strong>{member.name}</strong></span><small>{member.expiresAt ? `有效至 ${member.expiresAt.slice(0, 10)}` : "无期限"}</small></div>) : <div className="empty-state-card"><strong>暂无临时安装商</strong></div>}</div></main></MobileScroll>;
+  const installer = installers[0];
+  const authorized = installer?.authorizedDeviceIds ?? [];
+  const deviceScopes = [
+    { id: "controller", label: "DC12 控制器", detail: "控制器本体与连接状态" },
+    { id: "channel-1", label: "CH1 · 庭院门", detail: "开关与点动控制" },
+    { id: "channel-2", label: "CH2 · 水泵", detail: "开关与运行状态" },
+    { id: "channel-3", label: "CH3 · 喷泉", detail: "开关与运行状态" },
+    { id: "channel-4", label: "CH4 · 灌溉", detail: "开关与运行状态" },
+  ];
+  const [selectedDevices, setSelectedDevices] = useState<string[]>(authorized);
+  const [duration, setDuration] = useState("30 天");
+  const save = () => {
+    if (!installer) return;
+    const expiresAt = duration === "7 天" ? "2026-08-08T23:59:59+08:00" : duration === "90 天" ? "2026-10-31T23:59:59+08:00" : "2026-08-31T23:59:59+08:00";
+    yard.updateInstallerAuthorization(yard.activeYardId, installer.id, selectedDevices, expiresAt);
+    yard.notify("临时安装商授权已保存");
+  };
+  return (
+    <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage installer-authorization-page">
+      <div className="yard-subpage-intro"><small>设备安装与诊断</small><h1>临时安装商权限</h1><p>{canManage ? "选择安装商可查看和操作的设备范围。" : "当前页面为只读，授权由庭院所有者管理。"}</p></div>
+      <div className="yard-member-list">{installer ? <div key={installer.id}><span><SlidersHorizontal size={22} /><strong>{installer.name}</strong></span><small>{installer.expiresAt ? <>有效至 <span>{installer.expiresAt.slice(0, 10)}</span></> : "无期限"}</small></div> : <div className="empty-state-card"><strong>暂无临时安装商</strong></div>}</div>
+      {installer ? <>
+        <section className="content-section flush-section installer-scope-section"><div className="section-title"><span>设备授权范围</span><small>{selectedDevices.length} 项已选择</small></div><div className="installer-scope-list">{deviceScopes.map((device) => <label key={device.id} className={selectedDevices.includes(device.id) ? "selected" : ""}><input type="checkbox" checked={selectedDevices.includes(device.id)} disabled={!canManage} onChange={() => setSelectedDevices((current) => current.includes(device.id) ? current.filter((id) => id !== device.id) : [...current, device.id])} /><span><strong>{device.label}</strong><small>{device.detail}</small></span><Check size={17} weight="bold" /></label>)}</div></section>
+        <section className="content-section flush-section installer-duration-section"><div className="section-title"><span>授权期限</span></div><div className="choice-grid three-col">{["7 天", "30 天", "90 天"].map((item) => <button key={item} className={duration === item ? "selected" : ""} disabled={!canManage} onClick={() => setDuration(item)}>{item}</button>)}</div></section>
+        {canManage ? <button className="primary-button" data-testid="save-installer-authorization" onClick={save}>保存授权</button> : <div className="permission-note"><ShieldCheck size={17} />只读访问</div>}
+      </> : null}
+    </main></MobileScroll>
+  );
 }
 
 function addDeviceScreen(): FlowScreen {
@@ -2714,12 +2765,17 @@ function channelIcon(type: string, size = 23): ReactNode {
 }
 
 function MeHome({ flow }: { flow: FlowControls }) {
+  const yard = useYard();
+  const configuredCount = yard.controllerChannels.filter((channel) => channel.configured).length + (yard.activeYard.light.visible ? 1 : 0);
+  const installerCount = yard.activeYard.members.filter((member) => member.role === "installer").length;
+  const visualMode = useVisualMode();
+  const roleLabel = yard.activeYard.membership.role === "owner" ? "庭院所有者" : yard.activeYard.membership.roleLabel;
   return (
     <MobileScroll className="app-screen dark-screen"><main className="root-page standard-page">
       <AppTopBar title="我的" subtitle="家庭、权限与系统设置" />
-      <section className="profile-card"><span><UserCircle size={42} weight="duotone" /></span><div><strong>庭院所有者</strong><small>我的庭院 · 所有者</small></div><CaretDown size={18} /></section>
-      <section className="content-section flush-section"><div className="settings-list"><button data-testid="open-device-management" onClick={() => flow.push(deviceManagementScreen())}><SlidersHorizontal size={21} /><span>设备管理</span><strong>2 台</strong></button><button><Users size={21} /><span>家庭与成员</span><strong>3 人</strong></button><button><ShareNetwork size={21} /><span>临时安装商权限</span><strong>1 个有效</strong></button><button><Bell size={21} /><span>消息与通知</span><strong>2 条</strong></button><button><ListChecks size={21} /><span>全局操作日志</span><strong>查看</strong></button></div></section>
-      <section className="content-section flush-section"><div className="settings-list"><button><Globe size={21} /><span>语言与地区</span><strong>简体中文</strong></button><button><MapPin size={21} /><span>庭院时区</span><strong>亚洲/上海</strong></button><button><Bluetooth size={21} /><span>蓝牙与本地控制</span><strong>可用</strong></button><button><Gear size={21} /><span>应用设置</span><strong> </strong></button></div></section>
+      <section className={`profile-card ${visualMode === "warm" ? "warm-profile-card" : ""}`}><span><UserCircle size={42} weight="duotone" /></span><div><strong>{roleLabel}</strong><small>{yard.activeYard.profile.name} · {yard.activeYard.membership.roleLabel}</small></div><CaretDown size={18} /></section>
+      <section className="content-section flush-section"><div className="settings-list"><button data-testid="open-device-management" onClick={() => flow.push(deviceManagementScreen())}><SlidersHorizontal size={21} /><span>设备管理</span><strong>{configuredCount} 台</strong></button><button onClick={() => flow.push(membersScreen())}><Users size={21} /><span>家庭与成员</span><strong>{yard.activeYard.members.length} 人</strong></button>{yard.permissions.manageYard ? <button onClick={() => flow.push(installerAuthorizationScreen())}><ShareNetwork size={21} /><span>临时安装商权限</span><strong>{installerCount} 个有效</strong></button> : null}<button><Bell size={21} /><span>消息与通知</span><strong>2 条</strong></button><button><ListChecks size={21} /><span>全局操作日志</span><strong>查看</strong></button></div></section>
+      <section className="content-section flush-section"><div className="settings-list"><button><Globe size={21} /><span>语言与地区</span><strong>简体中文</strong></button><button onClick={() => flow.push(yardProfileScreen())}><MapPin size={21} /><span>庭院时区</span><strong>{yard.activeYard.profile.timezone}</strong></button><button><Bluetooth size={21} /><span>蓝牙与本地控制</span><strong>可用</strong></button><button><Gear size={21} /><span>应用设置</span><strong> </strong></button></div></section>
     </main></MobileScroll>
   );
 }

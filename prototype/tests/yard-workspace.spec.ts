@@ -130,3 +130,42 @@ test("member sees read-only yard information", async ({ page }) => {
   await expect(page.getByTestId("save-yard-profile")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "退出庭院" })).toBeVisible();
 });
+
+test("me tab follows the active yard role and links to shared management", async ({ page }) => {
+  await openPrototype(page);
+  await page.getByTestId("tab-me").click();
+  await expect(page.getByText("庭院所有者", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /家庭与成员/ })).toContainText("3 人");
+
+  await page.getByRole("button", { name: /家庭与成员/ }).click();
+  await expect(page.getByText("林先生", { exact: true })).toBeVisible();
+  await expect(page.getByText("王女士", { exact: true })).toBeVisible();
+  await expect(page.getByText("安装服务", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "返回" }).click();
+  await page.getByRole("button", { name: /临时安装商权限/ }).click();
+  await expect(page.getByText("DC12 控制器", { exact: true })).toBeVisible();
+  await expect(page.getByText("2026-08-31", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "保存授权" })).toBeVisible();
+});
+
+test("expired installer membership cannot become active", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-01T08:00:00+08:00"));
+  await openPrototype(page);
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: /切换到客户庭院/ }).click();
+  await expect(page.getByRole("status")).toContainText("授权已到期");
+  await expect(page.getByTestId("yard-app")).toHaveAttribute("data-yard-id", "my-yard");
+});
+
+test("both visual entry points preserve the active yard workspace", async ({ page }) => {
+  await openPrototype(page, "night");
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: /切换到父母家/ }).click();
+  await expect(page.getByText("父母家廊灯", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "暖白" }).click();
+  await expect(page.getByTestId("yard-app")).toHaveAttribute("data-visual", "warm");
+  await expect(page.getByTestId("yard-app")).toHaveAttribute("data-yard-id", "parents-yard");
+  await expect(page.getByTestId("active-yard-name")).toHaveText("父母家");
+  await expect(page.getByText("父母家廊灯", { exact: true })).toBeVisible();
+});
