@@ -3717,3 +3717,162 @@ button {
   color: #315b35;
   background: #edf4ec;
 }
+
+/* Yard switcher: the two visual directions keep separate card anatomy. */
+.night-yard-switcher,
+.warm-yard-switcher {
+  display: grid;
+  gap: 13px;
+}
+
+.night-yard-list,
+.warm-yard-list {
+  display: grid;
+  gap: 9px;
+}
+
+.night-yard-option,
+.warm-yard-option {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 11px;
+  text-align: left;
+}
+
+.night-yard-option {
+  border: 1px solid #263748;
+  border-radius: 15px;
+  color: #eef4fa;
+  background: #111c28;
+}
+
+.night-yard-option[aria-current="true"] {
+  border-color: #d99a3e;
+  box-shadow: inset 0 0 0 1px rgb(217 154 62 / 28%);
+}
+
+.night-yard-option-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 11px;
+  color: #f0b45a;
+  background: rgb(217 154 62 / 13%);
+}
+
+.night-yard-option-copy,
+.warm-yard-option-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.night-yard-option-copy strong {
+  color: #eef4fa;
+  font-size: 13px;
+}
+
+.night-yard-option-copy small,
+.night-yard-option-copy em {
+  overflow: hidden;
+  color: #8294a7;
+  font-size: 9px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.night-yard-option > svg {
+  color: #8798a8;
+}
+
+.night-yard-option[aria-current="true"] > svg {
+  color: #f0b45a;
+}
+
+.night-yard-actions,
+.warm-yard-actions {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.night-yard-actions {
+  border-top: 1px solid #263748;
+}
+
+.night-yard-actions .primary-button {
+  color: #101820;
+  background: #d99a3e;
+}
+
+.night-yard-actions .secondary-button {
+  color: #c4d0db;
+  border-color: #344859;
+  background: #182533;
+}
+
+.warm-yard-option {
+  border: 1px solid #ebe6dc;
+  border-radius: 17px;
+  color: #203923;
+  background: #fffefb;
+  box-shadow: 0 8px 22px rgb(75 61 36 / 8%);
+}
+
+.warm-yard-option[aria-current="true"] {
+  border-color: #315f35;
+  background: #f5f8f1;
+}
+
+.warm-yard-option-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: #315f35;
+  background: #eaf2e7;
+}
+
+.warm-yard-option-copy strong {
+  color: #203923;
+  font-size: 14px;
+}
+
+.warm-yard-option-copy small,
+.warm-yard-option-copy em {
+  overflow: hidden;
+  color: #77766f;
+  font-size: 9px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.warm-yard-option > svg {
+  color: #8b978b;
+}
+
+.warm-yard-option[aria-current="true"] > svg {
+  color: #315f35;
+}
+
+.warm-yard-actions {
+  border-top: 1px solid #ebe6dc;
+}
+
+.warm-yard-actions .primary-button {
+  color: #fff;
+  background: #315f35;
+}
+
+.warm-yard-actions .secondary-button {
+  color: #315f35;
+  border-color: rgb(49 95 53 / 22%);
+  background: #fff;
+}

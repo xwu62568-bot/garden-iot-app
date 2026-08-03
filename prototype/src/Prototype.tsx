@@ -620,12 +620,14 @@ function AppTopBar({
   selectable = false,
   showNotifications = false,
   action,
+  onSelectYard,
 }: {
   title?: string;
   subtitle?: string;
   selectable?: boolean;
   showNotifications?: boolean;
   action?: { label: string; onClick: () => void; testId?: string };
+  onSelectYard?: () => void;
 }) {
   const visualMode = useVisualMode();
   const yard = useYard();
@@ -641,7 +643,7 @@ function AppTopBar({
     return (
       <header className="warm-module-topbar">
         {selectable ? (
-          <button className="warm-module-selector" aria-label="切换庭院">{heading}<CaretDown size={18} weight="bold" /></button>
+          <button className="warm-module-selector" aria-label="切换庭院" onClick={onSelectYard}>{heading}<CaretDown size={18} weight="bold" /></button>
         ) : (
           <div className="warm-module-heading">{heading}</div>
         )}
@@ -657,7 +659,7 @@ function AppTopBar({
 
   return (
     <header className="app-topbar">
-      {selectable ? <button className="yard-selector" aria-label="切换庭院">{heading}<CaretDown size={18} weight="bold" /></button> : <div className="yard-selector page-heading">{heading}</div>}
+      {selectable ? <button className="yard-selector" aria-label="切换庭院" onClick={onSelectYard}>{heading}<CaretDown size={18} weight="bold" /></button> : <div className="yard-selector page-heading">{heading}</div>}
       {showNotifications || action ? <div className="topbar-actions">
         {showNotifications ? <button className="icon-button" aria-label="通知">
           <Bell size={24} />
@@ -671,10 +673,10 @@ function AppTopBar({
   );
 }
 
-function NightDevicesTop({ flow }: { flow: FlowControls }) {
+function NightDevicesTop({ flow, onSelectYard }: { flow: FlowControls; onSelectYard: () => void }) {
   return (
     <>
-      <AppTopBar selectable showNotifications action={{ label: "添加设备", onClick: () => flow.push(addDeviceScreen()) }} />
+      <AppTopBar selectable onSelectYard={onSelectYard} showNotifications action={{ label: "添加设备", onClick: () => flow.push(addDeviceScreen()) }} />
       <section className="garden-hero" aria-label="庭院运行状态">
         <img src={publicAsset("assets/app/night-garden-hero.png")} alt="夜间庭院灯光、喷泉与庭院门" draggable={false} />
         <div className="hero-scrim" />
@@ -687,13 +689,13 @@ function NightDevicesTop({ flow }: { flow: FlowControls }) {
   );
 }
 
-function WarmDevicesTop({ flow }: { flow: FlowControls }) {
+function WarmDevicesTop({ flow, onSelectYard }: { flow: FlowControls; onSelectYard: () => void }) {
   const yard = useYard();
   return (
     <section className="warm-devices-top" aria-label="庭院运行状态">
       <img className="warm-devices-hero-image" src={publicAsset("assets/app/warm-garden-hero-faded.png")} alt="黄昏庭院花园与庭院门" draggable={false} />
       <header className="warm-devices-topbar">
-        <button className="warm-yard-selector" aria-label="切换庭院">
+        <button className="warm-yard-selector" aria-label="切换庭院" onClick={onSelectYard}>
           <strong data-testid="active-yard-name">{yard.activeYard.profile.name}</strong>
           <CaretDown size={18} weight="bold" />
         </button>
@@ -707,6 +709,82 @@ function WarmDevicesTop({ flow }: { flow: FlowControls }) {
         <strong>设备运行正常</strong>
       </div>
     </section>
+  );
+}
+
+type YardSwitcherContentProps = {
+  yards: YardWorkspace[];
+  activeYardId: string;
+  onSelect: (yardId: string) => void;
+  onCreate: () => void;
+  onJoin: () => void;
+  onManage: () => void;
+};
+
+function yardSummary(yard: YardWorkspace) {
+  const visibleDevices = [yard.light.visible, ...yard.controllerChannels.filter((channel) => channel.configured && channel.visible).map(() => true)].filter(Boolean).length;
+  const onlineDevices = yard.membership.role === "installer" ? yard.controllerChannels.filter((channel) => channel.configured).length : visibleDevices;
+  return `${onlineDevices}/${Math.max(visibleDevices, onlineDevices)} 台设备在线`;
+}
+
+function YardOption({ yard, activeYardId, onSelect, visual }: YardSwitcherContentProps & { yard: YardWorkspace; visual: VisualMode }) {
+  const isActive = yard.id === activeYardId;
+  return (
+    <button
+      className={`${visual}-yard-option`}
+      aria-current={isActive ? "true" : undefined}
+      aria-label={`切换到${yard.profile.name}`}
+      onClick={() => onSelect(yard.id)}
+    >
+      <span className={`${visual}-yard-option-icon`}><House size={visual === "warm" ? 22 : 20} /></span>
+      <span className={`${visual}-yard-option-copy`}>
+        <strong>{yard.profile.name}</strong>
+        <small>{yard.membership.roleLabel} · {yard.profile.city} · {yard.profile.timezone}</small>
+        <em>{yardSummary(yard)}{yard.membership.expiresAt ? ` · 授权至 ${yard.membership.expiresAt.slice(0, 10)}` : ""}</em>
+      </span>
+      {isActive ? <Check size={19} weight="bold" /> : <CaretRight size={18} />}
+    </button>
+  );
+}
+
+function NightYardSwitcherContent(props: YardSwitcherContentProps) {
+  return (
+    <div className="night-yard-switcher" data-testid="night-yard-switcher">
+      <div className="night-yard-list">
+        {props.yards.map((yard) => <YardOption key={yard.id} {...props} yard={yard} visual="night" />)}
+      </div>
+      <div className="night-yard-actions">
+        <button className="primary-button" onClick={props.onCreate}><Plus size={18} />新建庭院</button>
+        <button className="secondary-button" onClick={props.onJoin}><QrCode size={18} />加入庭院</button>
+        <button className="secondary-button" onClick={props.onManage}><Gear size={18} />管理当前庭院</button>
+      </div>
+    </div>
+  );
+}
+
+function WarmYardSwitcherContent(props: YardSwitcherContentProps) {
+  return (
+    <div className="warm-yard-switcher" data-testid="warm-yard-switcher">
+      <div className="warm-yard-list">
+        {props.yards.map((yard) => <YardOption key={yard.id} {...props} yard={yard} visual="warm" />)}
+      </div>
+      <div className="warm-yard-actions">
+        <button className="primary-button" onClick={props.onCreate}><Plus size={18} />新建庭院</button>
+        <button className="secondary-button" onClick={props.onJoin}><QrCode size={18} />加入庭院</button>
+        <button className="secondary-button" onClick={props.onManage}><Gear size={18} />管理当前庭院</button>
+      </div>
+    </div>
+  );
+}
+
+function YardSwitcherSheet({ open, onOpenChange, yards, activeYardId, onSelect, onCreate, onJoin, onManage }: YardSwitcherContentProps & { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const visualMode = useVisualMode();
+  return (
+    <BottomSheet open={open} onOpenChange={onOpenChange} title="切换庭院" description="选择后，设备、场景和自动化会切换到对应庭院。" snap={0.68}>
+      {visualMode === "warm"
+        ? <WarmYardSwitcherContent yards={yards} activeYardId={activeYardId} onSelect={onSelect} onCreate={onCreate} onJoin={onJoin} onManage={onManage} />
+        : <NightYardSwitcherContent yards={yards} activeYardId={activeYardId} onSelect={onSelect} onCreate={onCreate} onJoin={onJoin} onManage={onManage} />}
+    </BottomSheet>
   );
 }
 
@@ -740,9 +818,10 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
   const yard = useYard();
   const visualMode = useVisualMode();
   const isWarm = visualMode === "warm";
-  const [area, setArea] = useState("全部");
+  const [yardSwitcherOpen, setYardSwitcherOpen] = useState(false);
   const [gateSheet, setGateSheet] = useState(false);
   const [irrigationSheet, setIrrigationSheet] = useState(false);
+  const area = yard.activeYard.selectedArea;
   const areas = ["全部", "后院", "露台", "泳池"];
   const fountainChannel = yard.controllerChannels.find((channel) => channel.id === 2);
   const gateChannel = yard.controllerChannels.find((channel) => channel.id === 1);
@@ -753,7 +832,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
     <>
       <MobileScroll className={`app-screen dark-screen ${isWarm ? "warm-screen" : ""}`}>
         <main className="root-page devices-page">
-          {isWarm ? <WarmDevicesTop flow={flow} /> : <NightDevicesTop flow={flow} />}
+          {isWarm ? <WarmDevicesTop flow={flow} onSelectYard={() => setYardSwitcherOpen(true)} /> : <NightDevicesTop flow={flow} onSelectYard={() => setYardSwitcherOpen(true)} />}
 
           <Carousel ariaLabel="庭院区域" className="area-carousel" contentClassName="area-track">
             {areas.map((item) => (
@@ -761,7 +840,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 key={item}
                 className={`area-chip ${area === item ? "active" : ""}`}
                 aria-pressed={area === item}
-                onClick={() => setArea(item)}
+                onClick={() => yard.setSelectedArea(item)}
               >
                 {item}
               </button>
@@ -911,6 +990,24 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
           </section>
         </main>
       </MobileScroll>
+
+      <YardSwitcherSheet
+        open={yardSwitcherOpen}
+        onOpenChange={setYardSwitcherOpen}
+        yards={yard.yards}
+        activeYardId={yard.activeYardId}
+        onSelect={(yardId) => {
+          const target = yard.yards.find((item) => item.id === yardId);
+          const result = yard.switchYard(yardId);
+          if (result === "switched" && target) {
+            setYardSwitcherOpen(false);
+            yard.notify(`已切换至${target.profile.name}`);
+          }
+        }}
+        onCreate={() => yard.notify("新建庭院流程即将开始")}
+        onJoin={() => yard.notify("加入庭院流程即将开始")}
+        onManage={() => yard.notify("庭院管理即将打开")}
+      />
 
       <BottomSheet
         open={gateSheet}
