@@ -455,6 +455,241 @@ button {
   color: var(--amber-bright);
 }
 
+/* Immersive night devices home. Keep this isolated from warm mode and other tabs. */
+.visual-night .devices-page {
+  position: relative;
+  background:
+    radial-gradient(circle at 12% 42%, rgba(43, 58, 49, 0.2), transparent 34%),
+    linear-gradient(180deg, #091116 0%, #070d11 58%, #070c10 100%);
+}
+
+.visual-night .night-devices-top {
+  position: relative;
+  min-height: 320px;
+  overflow: hidden;
+  background-color: #091116;
+  background-position: 64% center;
+  background-size: cover;
+  isolation: isolate;
+}
+
+.visual-night .night-devices-top::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(circle at 76% 28%, rgba(225, 176, 96, 0.1), transparent 29%),
+    linear-gradient(90deg, rgba(4, 9, 12, 0.13), transparent 42%, rgba(2, 6, 9, 0.08));
+  content: "";
+  pointer-events: none;
+}
+
+.visual-night .night-devices-top .app-topbar {
+  position: relative;
+  z-index: 3;
+  background: linear-gradient(180deg, rgba(5, 10, 14, 0.92) 0%, rgba(5, 10, 14, 0.38) 68%, transparent 100%);
+}
+
+.visual-night .night-devices-top .yard-selector strong {
+  color: #f4f1e9;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+}
+
+.visual-night .night-devices-top .icon-button {
+  border-color: rgba(238, 224, 198, 0.2);
+  color: #f4f1e9;
+  background: rgba(10, 15, 18, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 7px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+}
+
+.visual-night .night-devices-top .garden-hero {
+  height: 220px;
+  overflow: visible;
+  background: transparent;
+}
+
+.visual-night .night-devices-top .garden-hero > img {
+  visibility: hidden;
+}
+
+.visual-night .night-devices-top .hero-scrim {
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(5, 10, 13, 0.08) 38%, rgba(6, 12, 16, 0.58) 76%, #091116 100%),
+    linear-gradient(90deg, rgba(3, 7, 9, 0.12), transparent 55%);
+}
+
+.visual-night .night-devices-top .hero-status {
+  right: 20px;
+  bottom: 24px;
+  left: 20px;
+  gap: 12px;
+  padding: 7px 0;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.visual-night .night-devices-top .hero-status-icon {
+  flex-basis: 45px;
+  height: 45px;
+  border-color: rgba(239, 197, 130, 0.38);
+  color: #f1c982;
+  background: rgba(9, 15, 18, 0.66);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 20px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(12px);
+}
+
+.visual-night .night-devices-top .hero-status strong {
+  color: #f4f1e9;
+  font-size: 19px;
+  font-weight: 620;
+}
+
+.visual-night .night-devices-top .hero-status small {
+  color: #c3c6c4;
+  font-size: 12px;
+}
+
+.visual-night .devices-page .area-carousel {
+  position: relative;
+  z-index: 2;
+  margin-top: -1px;
+  background: linear-gradient(180deg, #091116 0%, rgba(9, 17, 22, 0.94) 66%, transparent 100%);
+}
+
+.visual-night .devices-page .area-track {
+  gap: 10px;
+  padding: 9px 16px 11px;
+}
+
+.visual-night .devices-page .area-chip {
+  min-width: 76px;
+  height: 38px;
+  padding: 0 18px;
+  border-color: rgba(216, 222, 222, 0.12);
+  color: #c1c5c5;
+  background: rgba(18, 25, 29, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(12px);
+}
+
+.visual-night .devices-page .area-chip.active {
+  border-color: rgba(230, 181, 101, 0.7);
+  color: #f0d4a0;
+  background: linear-gradient(180deg, rgba(203, 148, 64, 0.2), rgba(116, 78, 31, 0.13));
+  box-shadow: inset 0 1px 0 rgba(255, 235, 202, 0.1), 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+
+.visual-night .devices-page .device-list {
+  gap: 9px;
+  padding: 2px 14px 24px;
+}
+
+.visual-night .devices-page .device-card {
+  min-height: 108px;
+  border-color: rgba(219, 224, 221, 0.11);
+  color: #f3f0e8;
+  background: linear-gradient(135deg, rgba(22, 29, 33, 0.94), rgba(10, 15, 18, 0.91));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025), 0 9px 24px rgba(0, 0, 0, 0.17);
+  backdrop-filter: blur(17px);
+}
+
+.visual-night .devices-page .night-light-group-card {
+  border-color: rgba(231, 199, 144, 0.16);
+  background: linear-gradient(135deg, rgba(24, 30, 33, 0.95), rgba(11, 16, 19, 0.92));
+}
+
+.visual-night .devices-page .device-card-main {
+  gap: 13px;
+  padding: 10px 7px 10px 12px;
+}
+
+.visual-night .devices-page .device-thumb {
+  border: 1px solid rgba(235, 215, 181, 0.1);
+  color: #ecd4a9;
+  background: rgba(6, 11, 14, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.visual-night .devices-page .group-device-icon {
+  color: #edbd6f;
+  background: radial-gradient(circle at 44% 36%, rgba(226, 172, 86, 0.19), rgba(8, 14, 17, 0.9) 64%);
+}
+
+.visual-night .devices-page .device-title {
+  color: #f3f0e8;
+  font-weight: 620;
+}
+
+.visual-night .devices-page .device-state,
+.visual-night .devices-page .device-meta {
+  color: #a7aeaf;
+  font-size: 11px;
+}
+
+.visual-night .devices-page .device-state.on,
+.visual-night .devices-page .device-title-row em {
+  color: #efbd6d;
+}
+
+.visual-night .devices-page .device-state.on i {
+  background: #f0bd69;
+  box-shadow: 0 0 0 3px rgba(240, 189, 105, 0.08);
+}
+
+.visual-night .devices-page .device-title-row em {
+  background: rgba(206, 147, 60, 0.13);
+}
+
+.visual-night .devices-page .app-switch {
+  border-color: rgba(239, 224, 195, 0.17);
+  background: #253034;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.visual-night .devices-page .app-switch.on {
+  border-color: rgba(239, 191, 111, 0.54);
+  background: linear-gradient(90deg, #a76b2c, #d49a4a);
+  box-shadow: inset 0 1px 0 rgba(255, 234, 200, 0.2), 0 4px 14px rgba(176, 112, 38, 0.16);
+}
+
+.visual-night .devices-page .app-switch span {
+  background: #f4f3ed;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.32);
+}
+
+.visual-night .devices-page .outline-action {
+  min-width: 86px;
+  height: 42px;
+  border-color: rgba(234, 179, 90, 0.78);
+  border-radius: 13px;
+  color: #f0bd6b;
+  background: rgba(16, 20, 21, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.visual-night .devices-page .light-card-glow {
+  display: none;
+}
+
+.visual-night[data-active-tab="devices"] .bottom-nav {
+  border-top-color: rgba(217, 222, 220, 0.1);
+  background: rgba(7, 12, 15, 0.94);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(22px);
+}
+
+.visual-night[data-active-tab="devices"] .bottom-nav::after {
+  background: #070c0f;
+}
+
+.visual-night[data-active-tab="devices"] .bottom-nav button {
+  color: #8d9597;
+}
+
+.visual-night[data-active-tab="devices"] .bottom-nav button.active {
+  color: #efbd6d;
+}
+
 .detail-header {
   display: grid;
   grid-template-columns: 48px 1fr 48px;
@@ -738,9 +973,9 @@ button {
   background: var(--ink-850);
 }
 
-.quick-links button,
-.settings-list button,
-.select-list button {
+.quick-links > button,
+.settings-list > button,
+.select-list > button {
   display: grid;
   grid-template-columns: 28px 1fr auto;
   align-items: center;
@@ -753,14 +988,14 @@ button {
   background: transparent;
 }
 
-.quick-links button:last-child,
-.settings-list button:last-child,
-.select-list button:last-child {
+.quick-links > button:last-child,
+.settings-list > button:last-child,
+.select-list > button:last-child {
   border-bottom: 0;
 }
 
-.quick-links button > span,
-.select-list button > span {
+.quick-links > button > span,
+.select-list > button > span {
   display: grid;
   gap: 2px;
 }
@@ -1314,11 +1549,11 @@ button {
   border-radius: 12px;
 }
 
-.select-list button.selected {
+.select-list > button.selected {
   color: var(--amber-bright);
 }
 
-.select-list button > span {
+.select-list > button > span {
   display: flex;
   grid-column: span 2;
   flex-direction: row;
@@ -1952,6 +2187,20 @@ button {
   background: transparent;
 }
 
+.management-device-section {
+  min-width: 0;
+}
+
+.management-section-heading {
+  padding-inline: 4px;
+}
+
+.management-section-heading > button {
+  min-height: 32px;
+  padding-inline: 8px;
+  border-radius: 999px;
+}
+
 .physical-device-list {
   display: grid;
   gap: 9px;
@@ -1970,6 +2219,25 @@ button {
   color: var(--muted);
   text-align: left;
   background: var(--ink-850);
+}
+
+.device-management-page .physical-device-list > button {
+  min-width: 0;
+  padding: 16px;
+}
+
+.device-management-page .physical-device-list > button > svg:last-child {
+  flex: 0 0 auto;
+  margin-right: 2px;
+}
+
+.management-light-group-card {
+  border-color: rgba(217, 154, 62, 0.2) !important;
+  background: linear-gradient(135deg, rgba(217, 154, 62, 0.08), rgba(16, 27, 39, 0.98) 44%) !important;
+}
+
+.management-light-group-card .physical-device-icon {
+  border: 1px solid rgba(217, 154, 62, 0.16);
 }
 
 .physical-device-icon {
@@ -2019,6 +2287,105 @@ button {
 .management-note strong {
   color: var(--muted-strong);
   font-size: 10px;
+}
+
+.light-device-settings-page {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding-top: 16px;
+}
+
+.light-device-settings-summary {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: var(--ink-850);
+}
+
+.light-device-settings-summary > span:last-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.light-device-settings-summary small,
+.light-device-settings-summary p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.light-device-settings-summary strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.light-device-settings-summary p {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.light-device-settings-summary p i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #647181;
+}
+
+.light-device-settings-summary p i.on {
+  background: var(--amber-bright);
+}
+
+.light-device-area-section {
+  margin-top: 0;
+}
+
+.light-device-area-heading {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.light-device-area-heading > span {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--amber-bright);
+  background: var(--amber-soft);
+}
+
+.light-device-area-heading h1,
+.light-device-area-heading p {
+  margin: 0;
+}
+
+.light-device-area-heading h1 {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.light-device-area-heading p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.light-device-area-grid button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .controller-overview {
@@ -2678,15 +3045,6 @@ button {
   margin-right: 15px;
 }
 
-.visual-warm .warm-screen .warm-effect-swatch {
-  display: block;
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  object-fit: fill;
-  box-shadow: 0 4px 10px rgba(184, 93, 52, 0.15);
-}
-
 .visual-warm .warm-screen .warm-light-actions .app-switch {
   margin-right: 0;
 }
@@ -3135,12 +3493,12 @@ button {
   box-shadow: 0 6px 20px rgba(72, 65, 48, 0.045);
 }
 
-.visual-warm :is(.quick-links, .settings-list, .select-list) button {
+.visual-warm :is(.quick-links, .settings-list, .select-list) > button {
   border-bottom-color: rgba(49, 91, 53, 0.08);
   color: #4e5c50;
 }
 
-.visual-warm :is(.quick-links, .settings-list, .select-list) button > svg {
+.visual-warm :is(.quick-links, .settings-list, .select-list) > button > svg {
   color: #527157;
 }
 
@@ -3342,7 +3700,7 @@ button {
   color: #a1a7a1;
 }
 
-.visual-warm .select-list button.selected {
+.visual-warm .select-list > button.selected {
   color: #315b35;
   background: #f1f6f0;
 }
@@ -3543,6 +3901,17 @@ button {
   box-shadow: 0 7px 20px rgba(72, 65, 48, 0.045);
 }
 
+.visual-warm .management-light-group-card {
+  border-color: #d8e5d5 !important;
+  background: #f0f5ed !important;
+  box-shadow: 0 8px 22px rgba(49, 91, 53, 0.07) !important;
+}
+
+.visual-warm .management-light-group-card .physical-device-icon {
+  border-color: rgba(49, 91, 53, 0.08);
+  background: #f8fbf6;
+}
+
 .visual-warm .physical-device-icon,
 .visual-warm .controller-overview-icon,
 .visual-warm .channel-editor-summary > span:first-child {
@@ -3576,6 +3945,32 @@ button {
 
 .visual-warm .management-note strong {
   color: #315b35;
+}
+
+.visual-warm .light-device-settings-summary {
+  border-color: rgba(49, 91, 53, 0.075);
+  background: #fffefb;
+  box-shadow: 0 8px 22px rgba(72, 65, 48, 0.055);
+}
+
+.visual-warm .light-device-settings-summary strong,
+.visual-warm .light-device-area-heading h1 {
+  color: #273c2a;
+}
+
+.visual-warm .light-device-settings-summary small,
+.visual-warm .light-device-settings-summary p,
+.visual-warm .light-device-area-heading p {
+  color: #7d847d;
+}
+
+.visual-warm .light-device-settings-summary p i.on {
+  background: #4f7a55;
+}
+
+.visual-warm .light-device-area-heading > span {
+  color: #315b35;
+  background: #edf4ec;
 }
 
 .visual-warm .controller-stats div {
@@ -3723,6 +4118,64 @@ button {
 .warm-yard-switcher {
   display: grid;
   gap: 13px;
+}
+
+.bottom-sheet:has(.yard-switcher-shell) .sheet-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.yard-switcher-shell {
+  display: grid;
+  grid-template-areas:
+    "search"
+    "list"
+    "actions";
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.yard-switcher-scroll {
+  grid-area: list;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.yard-switcher-search {
+  grid-area: search;
+  min-width: 0;
+}
+
+.yard-switcher-primary-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.yard-switcher-fixed-actions {
+  grid-area: actions;
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.yard-switcher-fixed-actions .primary-button,
+.yard-switcher-fixed-actions .secondary-button {
+  min-width: 0;
+  margin: 0;
+  padding-inline: 8px;
+}
+
+.night-yard-option.expired,
+.warm-yard-option.expired {
+  opacity: 0.58;
 }
 
 .night-yard-list,
@@ -3915,6 +4368,204 @@ button {
   min-height: 100%;
   padding: 18px 18px 28px;
   box-sizing: border-box;
+}
+
+.yard-create-single-page {
+  gap: 13px;
+  padding-bottom: 118px;
+}
+
+.yard-create-form-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.night-yard-create-page .yard-create-form-card {
+  border: 1px solid #263748;
+  background: #111c28;
+}
+
+.warm-yard-create-page .yard-create-form-card {
+  border: 1px solid #ebe6dc;
+  background: #fffefb;
+  box-shadow: 0 7px 20px rgb(75 61 36 / 6%);
+}
+
+.yard-create-form-card .mobile-field {
+  margin: 0;
+}
+
+.yard-create-select-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 11px;
+  border-radius: 12px;
+  text-align: left;
+}
+
+.yard-create-select-row > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.yard-create-select-row small,
+.yard-create-select-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yard-create-select-row small {
+  font-size: 8px;
+}
+
+.yard-create-select-row strong {
+  font-size: 11px;
+}
+
+.night-yard-create-page .yard-create-select-row {
+  border: 1px solid #2b3d4d;
+  color: #dce6ee;
+  background: #172432;
+}
+
+.night-yard-create-page .yard-create-select-row small {
+  color: #8294a7;
+}
+
+.warm-yard-create-page .yard-create-select-row {
+  border: 1px solid #e5e8e0;
+  color: #28442d;
+  background: #fbfcf9;
+}
+
+.warm-yard-create-page .yard-create-select-row small {
+  color: #7d877d;
+}
+
+.yard-profile-select-row {
+  border: 1px solid #2b3d4d;
+  color: #dce6ee;
+  background: #172432;
+}
+
+.yard-profile-select-row small {
+  color: #8294a7;
+}
+
+.visual-warm .yard-profile-select-row {
+  border-color: #e5e8e0;
+  color: #28442d;
+  background: #fffefb;
+}
+
+.visual-warm .yard-profile-select-row small {
+  color: #7d877d;
+}
+
+.yard-custom-area-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 36px;
+  border: 1px dashed currentColor;
+  border-radius: 11px;
+  color: #8294a7;
+  background: transparent;
+  font-size: 10px;
+}
+
+.warm-yard-create-page .yard-custom-area-button {
+  color: #527157;
+}
+
+.field-error {
+  margin: 0;
+  color: #e5948d;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.warm-yard-create-page .field-error {
+  color: #a9574f;
+}
+
+.create-yard-fixed-footer {
+  position: absolute;
+  z-index: 22;
+  right: 0;
+  left: 0;
+  padding: 11px 18px 14px;
+  border-top: 1px solid #263748;
+  background: #0b121a;
+  box-shadow: 0 -10px 24px rgb(0 0 0 / 16%);
+}
+
+.create-yard-fixed-footer.warm {
+  border-top-color: #ebe6dc;
+  background: #fcfaf6;
+  box-shadow: 0 -10px 24px rgb(75 61 36 / 8%);
+}
+
+.create-yard-fixed-footer .primary-button {
+  margin: 0;
+}
+
+.yard-picker-search {
+  margin-bottom: 10px;
+}
+
+.yard-picker-list {
+  display: grid;
+  gap: 7px;
+  max-height: 330px;
+  overflow-y: auto;
+}
+
+.yard-picker-list > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #2b3d4d;
+  border-radius: 12px;
+  color: #dce6ee;
+  text-align: left;
+  background: #172432;
+}
+
+.yard-picker-list > button > span {
+  display: grid;
+  gap: 3px;
+}
+
+.yard-picker-list strong {
+  font-size: 11px;
+}
+
+.yard-picker-list small {
+  color: #8294a7;
+  font-size: 8px;
+}
+
+:root[data-yard-visual="warm"] .yard-picker-list > button {
+  border-color: #e5e8e0;
+  color: #28442d;
+  background: #fbfcf9;
+}
+
+:root[data-yard-visual="warm"] .yard-picker-list small {
+  color: #7d877d;
 }
 
 .night-yard-create-page {
@@ -4261,6 +4912,274 @@ button {
   background: #fcfaf6;
 }
 
+.yard-management-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: 13px;
+  background: #182533;
+}
+
+.yard-management-tabs button {
+  min-height: 34px;
+  border-radius: 10px;
+  color: #8294a7;
+  background: transparent;
+  font-size: 11px;
+}
+
+.yard-management-tabs button.active {
+  color: #101820;
+  background: #d99a3e;
+  font-weight: 700;
+}
+
+.warm-yard-management-page .yard-management-tabs {
+  background: #edf1eb;
+}
+
+.warm-yard-management-page .yard-management-tabs button {
+  color: #788178;
+}
+
+.warm-yard-management-page .yard-management-tabs button.active {
+  color: #315f35;
+  background: #fff;
+  box-shadow: 0 3px 10px rgb(75 61 36 / 8%);
+}
+
+.yard-management-tab-panel {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  min-width: 0;
+}
+
+.yard-management-profile-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #263748;
+  border-radius: 16px;
+  background: #111c28;
+}
+
+.yard-management-profile-card > span {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 14px;
+  color: #f0b45a;
+  background: rgb(217 154 62 / 13%);
+}
+
+.yard-management-profile-card > div {
+  display: grid;
+  gap: 3px;
+}
+
+.yard-management-profile-card small,
+.yard-management-profile-card p {
+  margin: 0;
+  color: #8294a7;
+  font-size: 9px;
+}
+
+.yard-management-profile-card strong {
+  font-size: 14px;
+}
+
+.warm-yard-management-page .yard-management-profile-card {
+  border-color: #ebe6dc;
+  background: #fffefb;
+  box-shadow: 0 7px 20px rgb(75 61 36 / 6%);
+}
+
+.warm-yard-management-page .yard-management-profile-card > span {
+  color: #315f35;
+  background: #eaf2e7;
+}
+
+.warm-yard-management-page .yard-management-profile-card small,
+.warm-yard-management-page .yard-management-profile-card p {
+  color: #7d877d;
+}
+
+.yard-management-inline-list {
+  overflow: hidden;
+  border: 1px solid #263748;
+  border-radius: 15px;
+  background: #111c28;
+}
+
+.warm-yard-management-page .yard-management-inline-list {
+  border-color: #ebe6dc;
+  background: #fffefb;
+}
+
+.yard-management-section-title {
+  padding-inline: 3px;
+}
+
+.yard-management-area-cards,
+.yard-unassigned-list,
+.yard-area-device-list,
+.yard-device-area-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.yard-management-area-cards > button,
+.yard-unassigned-list > button,
+.yard-area-device-list > button {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #263748;
+  border-radius: 15px;
+  color: #eef4fa;
+  text-align: left;
+  background: #111c28;
+}
+
+.yard-area-card-icon,
+.yard-unassigned-list > button > span:first-child,
+.yard-area-device-list > button > span:first-child {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  color: #f0b45a;
+  background: rgb(217 154 62 / 13%);
+}
+
+.yard-management-area-cards > button > span:nth-child(2),
+.yard-unassigned-list > button > span:nth-child(2),
+.yard-area-device-list > button > span:nth-child(2) {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.yard-management-area-cards strong,
+.yard-unassigned-list strong,
+.yard-area-device-list strong {
+  font-size: 11px;
+}
+
+.yard-management-area-cards small,
+.yard-unassigned-list small,
+.yard-area-device-list small {
+  overflow: hidden;
+  color: #8294a7;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yard-area-device-list em {
+  color: #f0b45a;
+  font-size: 9px;
+  font-style: normal;
+}
+
+.warm-yard-management-page .yard-management-area-cards > button,
+.warm-yard-management-page .yard-unassigned-list > button,
+.visual-warm .yard-area-device-list > button {
+  border-color: #ebe6dc;
+  color: #203923;
+  background: #fffefb;
+  box-shadow: 0 6px 18px rgb(75 61 36 / 5%);
+}
+
+.warm-yard-management-page :is(.yard-area-card-icon, .yard-unassigned-list > button > span:first-child),
+.visual-warm .yard-area-device-list > button > span:first-child {
+  color: #315f35;
+  background: #eaf2e7;
+}
+
+.warm-yard-management-page :is(.yard-management-area-cards small, .yard-unassigned-list small),
+.visual-warm .yard-area-device-list small {
+  color: #7d877d;
+}
+
+.yard-area-complete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px;
+  border-radius: 14px;
+  color: #8fafc9;
+  background: #172432;
+}
+
+.yard-area-complete span {
+  display: grid;
+  gap: 3px;
+}
+
+.yard-area-complete strong {
+  font-size: 10px;
+}
+
+.yard-area-complete small {
+  color: #8294a7;
+  font-size: 8px;
+}
+
+.warm-yard-management-page .yard-area-complete {
+  color: #315f35;
+  background: #edf4ec;
+}
+
+.warm-yard-management-page .yard-area-complete small {
+  color: #718071;
+}
+
+.yard-device-area-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.yard-device-area-grid button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #2b3d4d;
+  border-radius: 12px;
+  color: #c8d4de;
+  background: #111c28;
+  font-size: 10px;
+}
+
+.yard-device-area-grid button.selected {
+  border-color: #d99a3e;
+  color: #f0b45a;
+  background: rgb(217 154 62 / 11%);
+}
+
+.visual-warm .yard-device-area-grid button {
+  border-color: #e4e8e0;
+  color: #657066;
+  background: #fffefb;
+}
+
+.visual-warm .yard-device-area-grid button.selected {
+  border-color: #315f35;
+  color: #315f35;
+  background: #edf4ec;
+}
+
 .yard-management-hero,
 .yard-subpage-intro {
   display: grid;
@@ -4524,4 +5443,1994 @@ button {
 
 .warm-yard-management-page .installer-scope-list label.selected {
   border-color: #315438;
+}
+
+/* Light groups */
+.add-choice-list {
+  display: grid;
+  gap: 10px;
+}
+
+.add-choice-list > button {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #263748;
+  border-radius: 15px;
+  color: #eef4fa;
+  background: #111c28;
+  text-align: left;
+}
+
+.add-choice-list > button:disabled {
+  opacity: 0.45;
+}
+
+.add-choice-list > button > span:first-child {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 13px;
+  color: #efb34f;
+  background: rgb(217 154 55 / 13%);
+}
+
+.add-choice-list > button > div {
+  display: grid;
+  gap: 4px;
+}
+
+.add-choice-list strong {
+  font-size: 13px;
+}
+
+.add-choice-list small {
+  color: #8294a7;
+  font-size: 9px;
+}
+
+.visual-warm .add-choice-list > button,
+:root[data-yard-visual="warm"] .add-choice-list > button {
+  border-color: #e9e4d9;
+  color: #203923;
+  background: #fffefb;
+  box-shadow: 0 7px 20px rgb(75 61 36 / 6%);
+}
+
+.visual-warm .add-choice-list > button > span:first-child,
+:root[data-yard-visual="warm"] .add-choice-list > button > span:first-child {
+  color: #315438;
+  background: #eef3e9;
+}
+
+.visual-warm .add-choice-list small,
+:root[data-yard-visual="warm"] .add-choice-list small,
+:root[data-yard-visual="warm"] .add-choice-list > button > svg {
+  color: #7d877d;
+}
+
+.device-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.device-title-row em {
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: #eab04d;
+  background: rgb(217 154 55 / 13%);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.light-group-card {
+  overflow: hidden;
+}
+
+.night-light-group-card {
+  border-color: #2b3d50;
+  background: linear-gradient(135deg, #111c28 0%, #0d1722 100%);
+}
+
+.group-device-icon {
+  color: #efb34f;
+  background: radial-gradient(circle at 42% 36%, rgb(240 180 90 / 24%), rgb(17 28 40 / 92%) 62%);
+  box-shadow: inset 0 0 0 1px rgb(240 180 90 / 12%);
+}
+
+.warm-light-group-card {
+  border-color: #e8e2d6;
+  background: #fffefb;
+  box-shadow: 0 10px 28px rgb(70 55 31 / 9%);
+}
+
+.warm-light-group-card .group-device-icon {
+  color: #315438;
+  background: #f2f2e9;
+  box-shadow: none;
+}
+
+.warm-light-group-card .device-title-row em {
+  color: #315438;
+  background: #edf3e9;
+}
+
+.light-group-detail-page,
+.light-group-editor-page,
+.light-member-detail-page {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  padding-bottom: 34px;
+}
+
+.light-group-editor-page > * {
+  min-width: 0;
+}
+
+.light-group-hero,
+.light-group-editor-intro {
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #293a4c;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #142230, #0e1823);
+}
+
+.light-group-hero-icon,
+.light-group-editor-intro > span {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 18px;
+  color: #efb34f;
+  background: rgb(217 154 55 / 12%);
+}
+
+.light-group-hero div,
+.light-group-editor-intro div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.light-group-hero small,
+.light-group-editor-intro small {
+  color: #8294a7;
+  font-size: 9px;
+}
+
+.light-group-hero h1,
+.light-group-editor-intro h1 {
+  margin: 0;
+  color: #f3f6fa;
+  font-size: 18px;
+}
+
+.light-group-hero p,
+.light-group-editor-intro p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #8fa1b3;
+  font-size: 10px;
+}
+
+.light-group-hero p i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #75879a;
+}
+
+.light-group-hero p i.on {
+  background: #efb34f;
+  box-shadow: 0 0 0 4px rgb(239 179 79 / 10%);
+}
+
+.light-group-hero > .light-group-power-button {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid #304357;
+  border-radius: 16px;
+  color: #7f91a4;
+  background: #101b27;
+}
+
+.light-group-hero > .light-group-power-button.active {
+  border-color: #d99a37;
+  color: #101820;
+  background: #efb34f;
+  box-shadow: 0 8px 24px rgb(217 154 55 / 22%);
+}
+
+.light-group-control-section {
+  margin: 0;
+}
+
+.light-group-control-section .section-title strong {
+  color: #efb34f;
+  font-size: 12px;
+}
+
+.light-group-range {
+  width: 100%;
+  height: 4px;
+  margin: 12px 0 7px;
+  accent-color: #d99a37;
+}
+
+.light-group-range-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #718397;
+  font-size: 8px;
+}
+
+.light-group-color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.light-group-color-grid button {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border: 1px solid #27394b;
+  border-radius: 12px;
+  color: #93a4b5;
+  background: #101b27;
+  font-size: 9px;
+}
+
+.light-group-color-grid i {
+  width: 25px;
+  height: 25px;
+  border: 3px solid rgb(255 255 255 / 12%);
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 22%);
+}
+
+.light-group-effects {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.capability-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #283a4c;
+  border-radius: 14px;
+  color: #79a8c5;
+  background: #152330;
+}
+
+.capability-note > span {
+  display: grid;
+  gap: 3px;
+}
+
+.capability-note strong {
+  color: #dce9f2;
+  font-size: 11px;
+}
+
+.capability-note small {
+  color: #8496a8;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.light-group-member-list,
+.light-member-select-list {
+  display: grid;
+  gap: 8px;
+}
+
+.light-group-member-list > div,
+.light-member-select-list > button {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #263748;
+  border-radius: 13px;
+  color: #edf3f8;
+  background: #111c28;
+  text-align: left;
+}
+
+.light-member-select-list > button.selected {
+  border-color: #d99a37;
+  background: rgb(217 154 55 / 7%);
+}
+
+.member-light-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 11px;
+  color: #efb34f;
+  background: rgb(217 154 55 / 11%);
+}
+
+.light-group-member-list > div > span:nth-child(2),
+.light-member-select-list > button > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+
+.light-group-member-list strong,
+.light-member-select-list strong {
+  font-size: 11px;
+}
+
+.light-group-member-list small,
+.light-member-select-list small {
+  color: #8294a7;
+  font-size: 8px;
+}
+
+.light-group-detail-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+}
+
+.light-group-detail-actions button {
+  margin: 0;
+}
+
+.light-group-editor-intro {
+  grid-template-columns: 58px 1fr;
+}
+
+.capability-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.capability-chip-row > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid #2d4052;
+  border-radius: 999px;
+  color: #dba749;
+  background: #101b27;
+  font-size: 9px;
+}
+
+.group-capability-preview > p,
+.capability-chip-row > p {
+  margin: 4px 0 10px;
+  color: #8294a7;
+  font-size: 10px;
+}
+
+.group-capability-preview .settings-list {
+  margin-top: 12px;
+}
+
+.light-group-management-section {
+  margin-top: 13px;
+}
+
+.warm-light-group-detail .light-group-hero,
+.warm-light-group-editor .light-group-editor-intro,
+.visual-warm .light-member-detail-page .light-group-hero {
+  border-color: #e8e2d6;
+  background: #fffefb;
+  box-shadow: 0 10px 28px rgb(70 55 31 / 8%);
+}
+
+.warm-light-group-detail .light-group-hero-icon,
+.warm-light-group-editor .light-group-editor-intro > span,
+.visual-warm .light-member-detail-page .light-group-hero-icon {
+  color: #315438;
+  background: #eef3e9;
+}
+
+.warm-light-group-detail .light-group-hero h1,
+.warm-light-group-editor .light-group-editor-intro h1,
+.visual-warm .light-member-detail-page .light-group-hero h1 {
+  color: #203923;
+}
+
+.warm-light-group-detail .light-group-hero p i.on,
+.visual-warm .light-member-detail-page .light-group-hero p i.on {
+  background: #4f7a55;
+  box-shadow: 0 0 0 4px rgb(79 122 85 / 10%);
+}
+
+.warm-light-group-detail .light-group-hero > .light-group-power-button {
+  border-color: #d8e1d5;
+  color: #315438;
+  background: #f4f6ef;
+}
+
+.warm-light-group-detail .light-group-hero > .light-group-power-button.active {
+  border-color: #315438;
+  color: #fff;
+  background: #315438;
+  box-shadow: 0 8px 22px rgb(49 84 56 / 18%);
+}
+
+.warm-light-group-detail .light-group-control-section .section-title strong {
+  color: #315438;
+}
+
+.warm-light-group-detail .light-group-range {
+  accent-color: #315438;
+}
+
+.warm-light-group-detail .light-group-color-grid button,
+.warm-light-group-detail .light-group-member-list > div,
+.warm-light-group-editor .light-member-select-list > button,
+.visual-warm .light-member-detail-page .capability-chip-row > span {
+  border-color: #e8e2d6;
+  color: #203923;
+  background: #fffefb;
+}
+
+.warm-light-group-editor .light-member-select-list > button.selected {
+  border-color: #315438;
+  background: #f0f5ec;
+}
+
+.warm-light-group-detail .member-light-icon,
+.warm-light-group-editor .member-light-icon {
+  color: #315438;
+  background: #eef3e9;
+}
+
+.warm-light-group-detail .capability-note,
+.visual-warm .light-member-detail-page .capability-note {
+  border-color: #dce6d8;
+  color: #315438;
+  background: #eef3e9;
+}
+
+.warm-light-group-detail .capability-note strong,
+.visual-warm .light-member-detail-page .capability-note strong {
+  color: #203923;
+}
+
+.warm-light-group-editor .capability-chip-row > span,
+.visual-warm .light-member-detail-page .capability-chip-row > span {
+  border-color: #dce5d9;
+  color: #315438;
+  background: #f2f6ee;
+}
+
+/* Warm surface completion.
+ * Some secondary pages are shared by both visual directions and define their
+ * night defaults later in this file. Keep the warm palette authoritative here
+ * so newly added shared cards cannot fall back to a dark surface. */
+.visual-warm {
+  --ink-950: #fcfaf6;
+  --ink-900: #fdfbf7;
+  --ink-850: #fffefb;
+  --ink-800: #f7f4ee;
+  --ink-760: #edf1e9;
+}
+
+.visual-warm .yard-subpage {
+  color: #203923;
+  background: #fcfaf6;
+}
+
+.visual-warm .yard-subpage-intro small,
+.visual-warm .yard-subpage-intro p,
+.visual-warm .yard-subpage .yard-member-list small,
+.visual-warm .yard-subpage .yard-area-management-list small,
+.visual-warm .yard-subpage .installer-scope-section .section-title small,
+.visual-warm .yard-subpage .installer-scope-list label small {
+  color: #7d877d;
+}
+
+.visual-warm .yard-subpage .yard-profile-field label {
+  color: #526054;
+}
+
+.visual-warm .yard-subpage .yard-profile-field input {
+  border-color: #ebe6dc;
+  color: #203923;
+  background: #fffefb;
+  box-shadow: 0 5px 16px rgb(75 61 36 / 4%);
+}
+
+.visual-warm .yard-subpage .yard-profile-field input:disabled {
+  color: #7d877d;
+  background: #f5f3ed;
+}
+
+.visual-warm .yard-subpage .yard-area-management-list > div,
+.visual-warm .yard-subpage .yard-member-list > div {
+  border-color: #ebe6dc;
+  color: #203923;
+  background: #fffefb;
+  box-shadow: 0 6px 18px rgb(75 61 36 / 6%);
+}
+
+.visual-warm .yard-subpage .yard-area-management-list > div > span > svg,
+.visual-warm .yard-subpage .yard-member-list > div > span > svg {
+  color: #527157;
+}
+
+.visual-warm .yard-subpage .installer-scope-list label,
+.visual-warm .yard-subpage .installer-scope-list label.selected {
+  border-color: #ebe6dc;
+  color: #526054;
+  background: #fffefb;
+  box-shadow: 0 5px 16px rgb(75 61 36 / 4%);
+}
+
+.visual-warm .yard-subpage .installer-scope-list label strong {
+  color: #203923;
+}
+
+.visual-warm .yard-subpage .installer-scope-list label.selected {
+  border-color: #315438;
+  color: #315438;
+  background: #f2f6ee;
+}
+
+.visual-warm .yard-subpage .permission-note {
+  color: #315438;
+  background: #edf4ec;
+}
+
+.visual-warm .weekday-grid button {
+  border-color: rgb(49 91 53 / 10%);
+  color: #657067;
+  background: #fbfcf9;
+}
+
+.visual-warm .weekday-grid button.selected {
+  border-color: #315438;
+  color: #fff;
+  background: #315438;
+}
+
+.visual-warm .empty-state-card {
+  border: 1px dashed rgb(49 91 53 / 20%);
+  border-radius: 16px;
+  color: #7d877d;
+  background: rgb(255 254 251 / 82%);
+}
+
+.visual-warm .empty-state-card strong {
+  color: #273c2a;
+}
+
+.visual-warm .device-empty-state {
+  border-color: rgb(49 91 53 / 22%);
+  color: #7d877d;
+  background: #fffefb;
+  box-shadow: 0 8px 22px rgb(75 61 36 / 5%);
+}
+
+.visual-warm .device-empty-state > svg {
+  color: #527157;
+}
+
+.warm-light-group-detail .light-group-hero small,
+.warm-light-group-detail .light-group-hero p,
+.warm-light-group-detail .light-group-range-labels,
+.warm-light-group-detail .light-group-member-list small,
+.warm-light-group-editor .light-group-editor-intro small,
+.warm-light-group-editor .light-group-editor-intro p,
+.warm-light-group-editor .light-member-select-list small,
+.visual-warm .light-member-detail-page .light-group-hero small,
+.visual-warm .light-member-detail-page .light-group-hero p,
+.visual-warm .group-capability-preview > p,
+.visual-warm .capability-chip-row > p {
+  color: #7d877d;
+}
+
+.visual-warm .warm-light-group-detail .light-group-color-grid button,
+.visual-warm .warm-light-group-detail .light-group-member-list > div,
+.visual-warm .warm-light-group-editor .light-member-select-list > button,
+.visual-warm .light-member-detail-page .capability-chip-row > span {
+  box-shadow: 0 5px 16px rgb(75 61 36 / 4%);
+}
+
+/* Immersive night visual system v2.
+ * The approved direction is neutral charcoal, moonlit garden depth and warm
+ * functional light. Keep every rule scoped so the warm-white product remains
+ * an independent visual implementation. */
+.visual-night,
+:root[data-yard-visual="night"] {
+  --night-canvas: #0e161d;
+  --night-canvas-raised: #121b23;
+  --night-surface: #151d24;
+  --night-surface-raised: #1d2832;
+  --night-surface-soft: #111a21;
+  --night-card-line: rgba(176, 188, 198, 0.12);
+  --night-card-background:
+    radial-gradient(circle at 10% 0%, rgba(222, 169, 87, 0.045), transparent 48%),
+    linear-gradient(135deg, #151d24 0%, #12191f 100%);
+  --night-card-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  --night-line: rgba(176, 188, 198, 0.18);
+  --night-line-strong: rgba(222, 179, 101, 0.42);
+  --night-text: #f3f2ee;
+  --night-text-secondary: #aab1b8;
+  --night-text-tertiary: #78838d;
+  --night-accent: #deb365;
+  --night-accent-strong: #e8bc70;
+  --night-accent-soft: rgba(222, 179, 101, 0.12);
+  --night-accent-surface: #2b2924;
+  --night-danger: #e59a8d;
+  --night-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  --ink-950: var(--night-canvas);
+  --ink-900: var(--night-canvas-raised);
+  --ink-850: var(--night-surface);
+  --ink-800: var(--night-surface-raised);
+  --ink-760: #20292b;
+  --line: var(--night-line);
+  --text: var(--night-text);
+  --muted: var(--night-text-tertiary);
+  --muted-strong: var(--night-text-secondary);
+  --amber: #a98251;
+  --amber-bright: var(--night-accent);
+  --amber-soft: var(--night-accent-soft);
+  --blue: var(--night-accent);
+  --blue-soft: var(--night-accent-soft);
+}
+
+.visual-night.yard-app,
+.visual-night .app-screen,
+.visual-night .dark-screen,
+.visual-night .root-page,
+.visual-night .detail-page,
+.visual-night .standard-page,
+.visual-night .editor-page,
+.visual-night .yard-create-page,
+.visual-night .yard-management-page,
+.visual-night .yard-subpage {
+  color: var(--night-text);
+  background-color: var(--night-canvas);
+  background-image:
+    radial-gradient(circle at 92% 8%, rgba(53, 75, 93, 0.14), transparent 24%),
+    linear-gradient(180deg, #111b23 0%, var(--night-canvas) 45%, #0c141b 100%);
+}
+
+.visual-night .standard-page .app-topbar,
+.visual-night .app-topbar,
+.visual-night .detail-header {
+  color: var(--night-text);
+  background-color: #0e161d;
+  background-image: linear-gradient(180deg, rgba(17, 27, 35, 0.98), rgba(14, 22, 29, 0.96));
+  border-color: var(--night-line);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.13);
+}
+
+.visual-night .standard-page .app-topbar {
+  min-height: 112px;
+  padding-bottom: 15px;
+}
+
+.visual-night .yard-selector strong,
+.visual-night .app-topbar .page-heading,
+.visual-night .detail-header strong {
+  color: var(--night-text);
+  font-weight: 620;
+  letter-spacing: -0.25px;
+}
+
+.visual-night .detail-header button,
+.visual-night .detail-header .header-action {
+  color: var(--night-accent);
+}
+
+.visual-night .icon-button {
+  border-color: rgba(235, 225, 207, 0.14);
+  color: var(--night-text);
+  background: rgba(20, 27, 29, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 6px 18px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(14px);
+}
+
+.visual-night .notification-dot {
+  border-color: var(--night-canvas-raised);
+  background: var(--night-accent-strong);
+}
+
+.visual-night .bottom-nav {
+  border-top-color: var(--night-line);
+  background: rgba(8, 13, 16, 0.94);
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(24px) saturate(1.1);
+}
+
+.visual-night .bottom-nav::after {
+  background: #151d23;
+}
+
+.visual-night .bottom-nav button {
+  color: #838b8b;
+}
+
+.visual-night .bottom-nav button.active {
+  color: var(--night-accent-strong);
+}
+
+.visual-night :is(
+  .control-panel,
+  .content-section,
+  .security-note,
+  .profile-card,
+  .feature-banner,
+  .scene-card,
+  .rule-card,
+  .builder-card,
+  .utility-status,
+  .light-group-hero,
+  .light-group-editor-intro,
+  .light-device-settings-summary,
+  .controller-overview,
+  .controller-stats,
+  .channel-editor-summary,
+  .channel-form-section,
+  .yard-create-form-card,
+  .yard-management-profile-card,
+  .management-summary
+) {
+  border-color: var(--night-line);
+  color: var(--night-text);
+  background-color: var(--night-surface);
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.018), transparent 58%);
+  box-shadow: var(--night-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.018);
+}
+
+.visual-night .profile-card,
+.visual-night .scene-card,
+.visual-night .rule-card,
+.visual-night .management-summary {
+  background-color: var(--night-surface);
+}
+
+.visual-night .feature-banner {
+  margin-top: 10px;
+  padding: 16px;
+  border-color: rgba(231, 181, 101, 0.2);
+  background-color: #151714;
+  background-image:
+    radial-gradient(circle at 8% 20%, rgba(231, 181, 101, 0.1), transparent 36%),
+    linear-gradient(135deg, rgba(231, 181, 101, 0.055), transparent 72%);
+}
+
+.visual-night .feature-banner > span,
+.visual-night .scene-icon,
+.visual-night .rule-icon,
+.visual-night .physical-device-icon,
+.visual-night .controller-overview-icon,
+.visual-night .light-device-area-heading > span,
+.visual-night .builder-label,
+.visual-night .member-light-icon,
+.visual-night .light-group-hero-icon,
+.visual-night .yard-area-card-icon,
+.visual-night .night-yard-option-icon,
+.visual-night .yard-management-profile-card > span {
+  border: 1px solid rgba(231, 181, 101, 0.13);
+  color: var(--night-accent-strong);
+  background: radial-gradient(circle at 40% 30%, rgba(231, 181, 101, 0.17), rgba(231, 181, 101, 0.06) 70%);
+}
+
+.visual-night .scene-card,
+.visual-night .rule-card {
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.visual-night .scene-list,
+.visual-night .rule-list {
+  gap: 10px;
+}
+
+.visual-night :is(.scene-play, .rule-main) {
+  color: var(--night-text);
+}
+
+.visual-night :is(.scene-play, .rule-main) strong {
+  color: var(--night-text);
+  font-weight: 600;
+}
+
+.visual-night :is(.scene-play, .rule-main) :is(small, em, p),
+.visual-night .feature-banner :is(small, p),
+.visual-night .profile-card small {
+  color: var(--night-text-secondary);
+}
+
+.visual-night .automation-tabs,
+.visual-night .segment-tabs,
+.visual-night .yard-management-tabs {
+  border: 1px solid rgba(229, 218, 197, 0.07);
+  background: #0d1417;
+  box-shadow: inset 0 1px 7px rgba(0, 0, 0, 0.22);
+}
+
+.visual-night :is(.automation-tabs, .segment-tabs, .yard-management-tabs) button {
+  color: var(--night-text-tertiary);
+}
+
+.visual-night :is(.automation-tabs, .segment-tabs) button[aria-selected="true"],
+.visual-night .yard-management-tabs button.active {
+  color: var(--night-accent-strong);
+  background: var(--night-accent-surface);
+  box-shadow: inset 0 0 0 1px rgba(231, 181, 101, 0.16);
+}
+
+.visual-night .automation-status,
+.visual-night .summary-box,
+.visual-night .validation-row,
+.visual-night .yard-area-complete,
+.visual-night .capability-note,
+.visual-night .controller-onboarding-note {
+  border: 1px solid rgba(231, 181, 101, 0.14);
+  color: var(--night-accent);
+  background-color: var(--night-accent-surface);
+  background-image: linear-gradient(135deg, rgba(231, 181, 101, 0.06), transparent);
+}
+
+.visual-night .automation-status {
+  background-color: #2b2924;
+}
+
+.visual-night :is(.automation-status, .summary-box, .validation-row, .yard-area-complete, .capability-note) strong {
+  color: var(--night-text);
+}
+
+.visual-night :is(.automation-status, .summary-box, .yard-area-complete, .capability-note) :is(small, p) {
+  color: var(--night-text-secondary);
+}
+
+.visual-night :is(.quick-links, .settings-list, .select-list, .channel-toggle-list, .yard-management-inline-list) {
+  border-color: var(--night-line);
+  background: var(--night-surface);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.visual-night :is(.quick-links, .settings-list, .select-list) > button,
+.visual-night .channel-toggle-list > div {
+  border-color: var(--night-line);
+  color: var(--night-text-secondary);
+  background: transparent;
+}
+
+.visual-night :is(.quick-links, .settings-list, .select-list) > button :is(strong, span),
+.visual-night .channel-toggle-list strong {
+  color: var(--night-text);
+}
+
+.visual-night :is(.quick-links, .settings-list, .select-list) > button :is(small, em),
+.visual-night .channel-toggle-list small {
+  color: var(--night-text-tertiary);
+}
+
+.visual-night :is(
+  .step-list > div,
+  .step-list > button,
+  .value-row,
+  .diy-card,
+  .effect-card,
+  .physical-device-list > button,
+  .management-light-group-card,
+  .channel-list > button,
+  .channel-list > button.configured,
+  .channel-type-grid button,
+  .channel-area-track button,
+  .light-group-color-grid button,
+  .light-group-member-list > div,
+  .light-member-select-list > button,
+  .yard-management-area-cards > button,
+  .yard-unassigned-list > button,
+  .yard-area-device-list > button,
+  .yard-area-management-list > div,
+  .yard-member-list > div,
+  .installer-scope-list label,
+  .night-yard-option,
+  .yard-picker-list > button,
+  .add-choice-list > button
+) {
+  border-color: var(--night-line);
+  color: var(--night-text);
+  background-color: var(--night-surface);
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.014), transparent 62%);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
+}
+
+.visual-night .physical-device-list > button,
+.visual-night .yard-management-area-cards > button,
+.visual-night .yard-area-device-list > button {
+  border-radius: 18px;
+}
+
+.visual-night .management-light-group-card {
+  border-color: rgba(231, 181, 101, 0.2) !important;
+  background-color: #151713 !important;
+  background-image: linear-gradient(135deg, rgba(231, 181, 101, 0.08), transparent 48%) !important;
+}
+
+.visual-night :is(.physical-device-list, .channel-list, .yard-management-area-cards, .yard-area-device-list) :is(small, em),
+.visual-night :is(.yard-area-management-list, .yard-member-list, .installer-scope-list) small,
+.visual-night :is(.night-yard-option-copy, .yard-picker-list) small {
+  color: var(--night-text-secondary);
+}
+
+.visual-night :is(.physical-device-list, .channel-list, .yard-management-area-cards, .yard-area-device-list) strong,
+.visual-night :is(.yard-area-management-list, .yard-member-list, .installer-scope-list) strong,
+.visual-night :is(.night-yard-option-copy, .yard-picker-list) strong {
+  color: var(--night-text);
+}
+
+.visual-night :is(.effect-card, .channel-type-grid button, .channel-area-track button, .light-member-select-list > button, .yard-device-area-grid button).selected,
+.visual-night .installer-scope-list label.selected,
+.visual-night .night-yard-option[aria-current="true"] {
+  border-color: var(--night-line-strong);
+  color: var(--night-accent-strong);
+  background-color: var(--night-accent-surface);
+  background-image: linear-gradient(145deg, rgba(231, 181, 101, 0.08), transparent);
+}
+
+.visual-night .mobile-field input,
+.visual-night .mobile-field textarea,
+.visual-night .yard-profile-field input,
+.visual-night .yard-create-select-row,
+.visual-night .yard-profile-select-row {
+  border-color: var(--night-line);
+  color: var(--night-text);
+  background: var(--night-surface);
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.14);
+}
+
+.visual-night .mobile-field input::placeholder,
+.visual-night .mobile-field textarea::placeholder {
+  color: var(--night-text-tertiary);
+}
+
+.visual-night :is(.field-label, .subsection-label, .yard-profile-field label) {
+  color: var(--night-text-secondary);
+}
+
+.visual-night :is(.primary-button, .floating-action) {
+  border-color: rgba(245, 201, 127, 0.72);
+  color: #17140f;
+  background: linear-gradient(135deg, #efc477, #c98c43);
+  box-shadow: 0 10px 24px rgba(174, 113, 41, 0.18), inset 0 1px 0 rgba(255, 244, 220, 0.28);
+}
+
+.visual-night .secondary-button {
+  border-color: rgba(231, 181, 101, 0.26);
+  color: var(--night-accent-strong);
+  background: var(--night-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.visual-night .danger-button {
+  border-color: rgba(229, 154, 141, 0.42);
+  color: var(--night-danger);
+  background: rgba(124, 55, 48, 0.13);
+}
+
+.visual-night .app-switch {
+  border-color: rgba(236, 227, 211, 0.13);
+  background: #273033;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.visual-night .app-switch.on {
+  border-color: rgba(242, 199, 128, 0.5);
+  background: linear-gradient(90deg, #9d632b, #d39a4e);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 203, 0.18), 0 4px 14px rgba(166, 99, 31, 0.14);
+}
+
+.visual-night .app-switch span {
+  background: #f5f3ec;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32);
+}
+
+.visual-night .device-visual {
+  border: 1px solid var(--night-line);
+  background-color: var(--night-surface-soft);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.2);
+}
+
+.visual-night .device-visual::after {
+  background: linear-gradient(180deg, rgba(5, 9, 11, 0.02), rgba(6, 11, 14, 0.9));
+}
+
+.visual-night .utility-icon.pictogram-shell,
+.visual-night .device-thumb,
+.visual-night .channel-number,
+.visual-night .channel-state {
+  border-color: var(--night-line);
+  color: var(--night-accent-strong);
+  background: var(--night-surface-soft);
+}
+
+.visual-night .channel-device-icon,
+.visual-night .controller-overview p,
+.visual-night .physical-device-list em,
+.visual-night .management-summary,
+.visual-night .controller-onboarding-note {
+  color: var(--night-accent);
+}
+
+.visual-night .channel-state.ready,
+.visual-night .channel-editor-summary > span:last-child.configured {
+  color: var(--night-accent-strong);
+  background: var(--night-accent-soft);
+}
+
+.visual-night .yard-management-stats div,
+.visual-night .yard-area-complete,
+.visual-night .permission-note {
+  border: 1px solid var(--night-line);
+  background: var(--night-surface);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.visual-night .yard-management-stats :is(strong, small),
+.visual-night .permission-note {
+  color: var(--night-accent);
+}
+
+.visual-night .yard-create-page,
+.visual-night .yard-management-page,
+.visual-night .yard-subpage {
+  background-color: var(--night-canvas);
+}
+
+.visual-night .create-yard-fixed-footer {
+  border-top-color: var(--night-line);
+  background: rgba(8, 13, 16, 0.96);
+  box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(20px);
+}
+
+.visual-night .night-yard-actions {
+  border-top-color: var(--night-line);
+}
+
+.visual-night .empty-state-card,
+.visual-night .device-empty-state {
+  border-color: rgba(231, 181, 101, 0.2);
+  color: var(--night-text-secondary);
+  background: rgba(17, 24, 27, 0.72);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.13);
+}
+
+.visual-night :is(.empty-state-card, .device-empty-state) strong {
+  color: var(--night-text);
+}
+
+:root[data-yard-visual="night"] .sheet-overlay {
+  background: rgba(2, 5, 7, 0.74);
+  backdrop-filter: blur(7px);
+}
+
+:root[data-yard-visual="night"] .bottom-sheet {
+  border-color: rgba(229, 218, 197, 0.14);
+  color: var(--night-text);
+  background-color: #151f27;
+  background-image:
+    radial-gradient(circle at 90% 0%, rgba(231, 181, 101, 0.07), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 55%);
+  box-shadow: 0 -24px 58px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-yard-visual="night"] :is(.sheet-title, .sheet-content) {
+  color: var(--night-text);
+}
+
+:root[data-yard-visual="night"] :is(.sheet-description, .sheet-subtitle) {
+  color: var(--night-text-secondary);
+}
+
+:root[data-yard-visual="night"] .sheet-handle {
+  background: rgba(229, 218, 197, 0.27);
+}
+
+:root[data-yard-visual="night"] :is(.add-choice-list > button, .yard-picker-list > button) {
+  border-color: var(--night-line);
+  color: var(--night-text);
+  background: var(--night-surface);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
+}
+
+:root[data-yard-visual="night"] :is(.add-choice-list, .yard-picker-list) :is(small, p) {
+  color: var(--night-text-secondary);
+}
+
+:root[data-yard-visual="night"] :is(.add-choice-list, .yard-picker-list) strong {
+  color: var(--night-text);
+}
+
+:root[data-yard-visual="night"] .sheet-security {
+  border-color: rgba(231, 181, 101, 0.14);
+  color: var(--night-accent);
+  background: var(--night-accent-surface);
+}
+
+/* Night page-family completion: pairing, editors, yard creation and group control. */
+.visual-night .feature-banner {
+  background-image:
+    linear-gradient(90deg, rgba(14, 19, 19, 0.93), rgba(14, 19, 19, 0.72) 62%, rgba(8, 12, 13, 0.78)),
+    url("/assets/app/night-garden-hero.png");
+  background-position: center, 54% 54%;
+  background-size: cover;
+}
+
+.visual-night :is(
+  .discovery-card,
+  .nearby-device-card,
+  .manual-add-grid button,
+  .association-row,
+  .pairing-checklist > div,
+  .schedule-row,
+  .action-row,
+  .execution-summary,
+  .add-device-help,
+  .management-note,
+  .yard-create-choice-list button,
+  .yard-create-area-grid button,
+  .yard-create-summary,
+  .yard-create-timezone,
+  .night-invite-preview,
+  .capability-chip-row > span
+) {
+  border: 1px solid var(--night-line);
+  color: var(--night-text);
+  background-color: var(--night-surface);
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.016), transparent 60%);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
+}
+
+.visual-night :is(.discovery-card, .pairing-checklist > div, .yard-create-timezone) {
+  border-color: rgba(231, 181, 101, 0.16);
+  background-color: var(--night-accent-surface);
+  background-image: linear-gradient(135deg, rgba(231, 181, 101, 0.06), transparent);
+}
+
+.visual-night :is(.discovery-card, .pairing-checklist > div, .yard-create-timezone) > svg,
+.visual-night :is(.add-device-help, .management-note, .association-row) > svg {
+  color: var(--night-accent);
+}
+
+.visual-night :is(
+  .discovery-card,
+  .nearby-device-copy,
+  .manual-add-grid,
+  .association-row,
+  .pairing-checklist,
+  .schedule-row,
+  .action-row,
+  .execution-summary,
+  .add-device-help,
+  .management-note,
+  .yard-create-choice-list,
+  .yard-create-summary,
+  .night-invite-preview
+) strong {
+  color: var(--night-text);
+}
+
+.visual-night :is(
+  .discovery-card,
+  .nearby-device-copy,
+  .manual-add-grid,
+  .association-row,
+  .pairing-checklist,
+  .schedule-row,
+  .action-row,
+  .execution-summary,
+  .add-device-help,
+  .management-note,
+  .yard-create-choice-list,
+  .yard-create-summary,
+  .night-invite-preview
+) :is(small, p, em, span) {
+  color: var(--night-text-secondary);
+}
+
+.visual-night .discovery-icon,
+.visual-night .nearby-device-icon,
+.visual-night .add-choice-list > button > span:first-child,
+.visual-night .invite-preview-heading > span {
+  border: 1px solid rgba(231, 181, 101, 0.13);
+  color: var(--night-accent-strong);
+  background: var(--night-accent-soft);
+}
+
+.visual-night .device-category-track button {
+  border: 1px solid var(--night-line);
+  color: var(--night-text-secondary);
+  background: var(--night-surface);
+}
+
+.visual-night .device-category-track button.active {
+  border-color: var(--night-line-strong);
+  color: var(--night-accent-strong);
+  background: var(--night-accent-surface);
+}
+
+.visual-night :is(.discovery-card > button, .add-device-cta) {
+  border-color: rgba(231, 181, 101, 0.52);
+  color: var(--night-accent-strong);
+  background: rgba(9, 13, 14, 0.48);
+}
+
+.visual-night .discovery-card > button.searching {
+  border-color: var(--night-line);
+  color: var(--night-text-secondary);
+}
+
+.visual-night :is(.speed-row, .preset-row, .choice-grid) button,
+.visual-night .weekday-grid button {
+  border-color: var(--night-line);
+  color: var(--night-text-secondary);
+  background: var(--night-surface);
+}
+
+.visual-night :is(.speed-row, .preset-row, .choice-grid) button.selected,
+.visual-night .weekday-grid button.selected {
+  border-color: var(--night-line-strong);
+  color: var(--night-accent-strong);
+  background: var(--night-accent-surface);
+}
+
+.visual-night .range-control,
+.visual-night .light-group-range {
+  accent-color: var(--night-accent);
+}
+
+.visual-night .progress-track {
+  background: #242b2d;
+}
+
+.visual-night .progress-track span {
+  background: linear-gradient(90deg, #bd7f37, var(--night-accent-strong));
+}
+
+.visual-night .status-tag {
+  color: var(--night-accent-strong);
+  background: var(--night-accent-soft);
+}
+
+.visual-night .log-list div {
+  border-color: var(--night-line);
+  color: var(--night-text-secondary);
+}
+
+.visual-night .yard-create-intro :is(small, p),
+.visual-night .yard-subpage-intro :is(small, p),
+.visual-night .yard-management-hero :is(small, p) {
+  color: var(--night-text-secondary);
+}
+
+.visual-night :is(.yard-create-intro, .yard-subpage-intro, .yard-management-hero) h1 {
+  color: var(--night-text);
+  font-weight: 620;
+}
+
+.visual-night :is(.yard-create-choice-list button, .yard-create-area-grid button).selected {
+  border-color: var(--night-line-strong);
+  color: var(--night-accent-strong);
+  background-color: var(--night-accent-surface);
+}
+
+.visual-night .yard-create-summary div {
+  border-color: var(--night-line);
+}
+
+.visual-night .night-yard-create-progress span {
+  color: var(--night-text-tertiary);
+  background: var(--night-surface-raised);
+}
+
+.visual-night .night-yard-create-progress span.active {
+  color: #17140f;
+  background: var(--night-accent-strong);
+}
+
+.visual-night .light-group-hero > .light-group-power-button {
+  border-color: var(--night-line);
+  color: var(--night-text-secondary);
+  background: var(--night-surface-soft);
+}
+
+.visual-night .light-group-hero > .light-group-power-button.active {
+  border-color: rgba(242, 199, 128, 0.68);
+  color: #17140f;
+  background: linear-gradient(135deg, var(--night-accent-strong), #c98c43);
+  box-shadow: 0 8px 24px rgba(180, 111, 37, 0.2);
+}
+
+.visual-night .light-group-hero :is(h1, strong),
+.visual-night .light-group-editor-intro :is(h1, strong) {
+  color: var(--night-text);
+}
+
+.visual-night :is(.light-group-hero, .light-group-editor-intro) :is(small, p),
+.visual-night .light-group-range-labels,
+.visual-night :is(.light-group-member-list, .light-member-select-list) small,
+.visual-night :is(.group-capability-preview, .capability-chip-row) > p {
+  color: var(--night-text-secondary);
+}
+
+.visual-night .capability-chip-row > span {
+  color: var(--night-accent);
+  background-color: var(--night-accent-surface);
+  box-shadow: none;
+}
+
+:root[data-yard-visual="night"] .pairing-checklist > div,
+:root[data-yard-visual="night"] .choice-grid button {
+  border: 1px solid var(--night-line);
+  color: var(--night-text-secondary);
+  background: var(--night-surface);
+}
+
+:root[data-yard-visual="night"] .pairing-checklist strong {
+  color: var(--night-text);
+}
+
+:root[data-yard-visual="night"] .pairing-checklist small {
+  color: var(--night-text-secondary);
+}
+
+:root[data-yard-visual="night"] .choice-grid button.selected {
+  border-color: var(--night-line-strong);
+  color: var(--night-accent-strong);
+  background: var(--night-accent-surface);
+}
+
+:root[data-yard-visual="night"] .app-toast {
+  border-color: rgba(231, 181, 101, 0.34);
+  color: #f3d59e;
+  background: rgba(30, 26, 20, 0.96);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+}
+
+/* Approved night composition alignment.
+ * This pass follows the selected mockup's lighter typography, image-led cards
+ * and floating rounded navigation rather than the earlier utility dashboard. */
+.visual-night .night-devices-top {
+  min-height: 342px;
+  background-position: 58% 52%;
+  background-size: cover;
+}
+
+.visual-night .night-devices-top::after {
+  background:
+    radial-gradient(circle at 78% 40%, rgba(222, 172, 88, 0.055), transparent 27%),
+    linear-gradient(90deg, rgba(2, 7, 10, 0.08), transparent 44%, rgba(2, 6, 9, 0.04));
+}
+
+.visual-night .night-devices-top .app-topbar {
+  min-height: 102px;
+  padding: 59px 21px 11px;
+  background: linear-gradient(180deg, rgba(6, 12, 18, 0.28) 0%, rgba(6, 12, 18, 0.04) 78%, transparent 100%);
+  box-shadow: none;
+}
+
+.visual-night .night-devices-top .yard-selector strong {
+  font-size: 22px;
+  font-weight: 520;
+  letter-spacing: -0.55px;
+}
+
+.visual-night .night-devices-top .yard-selector svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.8px;
+}
+
+.visual-night .night-devices-top .topbar-actions {
+  gap: 10px;
+}
+
+.visual-night .night-devices-top .icon-button {
+  width: 37px;
+  height: 37px;
+  border-color: rgba(238, 226, 205, 0.2);
+  background: rgba(10, 15, 17, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+.visual-night .night-devices-top .garden-hero {
+  height: 240px;
+}
+
+.visual-night .night-devices-top .hero-scrim {
+  background:
+    linear-gradient(180deg, transparent 0%, transparent 70%, rgba(9, 16, 22, 0.16) 86%, #0e161d 100%);
+}
+
+.visual-night .night-devices-top .hero-status {
+  right: 21px;
+  bottom: 25px;
+  left: 21px;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.visual-night .night-devices-top .hero-status-icon {
+  flex-basis: 45px;
+  height: 45px;
+  border-color: rgba(238, 193, 120, 0.42);
+  color: #efc474;
+  background: rgba(8, 13, 15, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 7px 18px rgba(0, 0, 0, 0.18);
+}
+
+.visual-night .night-devices-top .hero-status strong {
+  color: #f3f0e8;
+  font-size: 18px;
+  font-weight: 510;
+  letter-spacing: -0.25px;
+}
+
+.visual-night .night-devices-top .hero-status small {
+  margin-top: 1px;
+  color: #c5c7c3;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.visual-night .devices-page .area-carousel {
+  padding-top: 1px;
+  background: linear-gradient(180deg, #0e161d 0%, rgba(14, 22, 29, 0.98) 72%, transparent 100%);
+}
+
+.visual-night .devices-page .area-track {
+  gap: 9px;
+  padding: 9px 15px 12px;
+}
+
+.visual-night .devices-page .area-chip {
+  min-width: 76px;
+  height: 38px;
+  padding: 0 18px;
+  border-color: rgba(176, 188, 198, 0.16);
+  color: #b8bec4;
+  background: rgba(24, 33, 41, 0.84);
+  font-size: 14px;
+  font-weight: 400;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.018);
+}
+
+.visual-night .devices-page .area-chip.active {
+  border-color: rgba(233, 183, 98, 0.66);
+  color: #e5c487;
+  background: #2f2e2a;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 204, 0.08);
+}
+
+.visual-night .devices-page .device-list {
+  gap: 9px;
+  padding: 3px 14px 31px;
+}
+
+.visual-night .devices-page .device-card,
+.visual-night .devices-page .night-light-group-card {
+  min-height: 108px;
+  border-color: rgba(176, 188, 198, 0.17);
+  border-radius: 19px;
+  color: #f3f2ee;
+  background-color: #182129;
+  background-image: linear-gradient(118deg, #1b2630, #141d25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.018), 0 8px 22px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.visual-night .devices-page .device-card-main {
+  gap: 13px;
+  padding: 11px 7px 11px 12px;
+}
+
+.visual-night .devices-page .device-thumb,
+.visual-night .devices-page .device-thumb.pictogram {
+  flex-basis: 62px;
+  width: 62px;
+  height: 72px;
+  border: 1px solid rgba(176, 188, 198, 0.16);
+  border-radius: 17px;
+  color: #dcc18f;
+  background: #101820;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.visual-night .devices-page .night-group-photo {
+  object-fit: cover;
+  object-position: 60% 54%;
+  filter: brightness(0.98) saturate(0.94) contrast(1.02);
+}
+
+.visual-night .devices-page .device-copy {
+  gap: 4px;
+}
+
+.visual-night .devices-page .device-title {
+  color: #f3f2ee;
+  font-size: 16px;
+  font-weight: 540;
+  letter-spacing: -0.18px;
+}
+
+.visual-night .devices-page .device-title-row em {
+  padding: 3px 6px;
+  color: #d9ac62;
+  background: rgba(198, 145, 63, 0.11);
+  font-weight: 560;
+}
+
+.visual-night .devices-page .device-state,
+.visual-night .devices-page .device-meta {
+  color: #aab1b8;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.visual-night .devices-page .device-state.on {
+  color: #deb365;
+}
+
+.visual-night .devices-page .device-state.on i {
+  background: #efbf6d;
+  box-shadow: 0 0 0 3px rgba(239, 191, 109, 0.07);
+}
+
+.visual-night .devices-page .app-switch {
+  margin-right: 15px;
+  border-color: rgba(240, 220, 187, 0.16);
+}
+
+.visual-night .devices-page .app-switch.on {
+  background: linear-gradient(90deg, #9a7348, #b88c53);
+}
+
+.visual-night .devices-page .outline-action {
+  margin-right: 15px;
+  border-color: rgba(232, 191, 112, 0.9);
+  color: #e9c078;
+  background: rgba(18, 25, 31, 0.72);
+}
+
+.visual-night .bottom-nav,
+.visual-night[data-active-tab="devices"] .bottom-nav {
+  overflow: visible;
+  padding: 8px 8px 7px;
+  border: 1px solid rgba(176, 188, 198, 0.18);
+  border-bottom: 0;
+  border-radius: 32px 32px 0 0;
+  background: rgba(21, 29, 35, 0.97);
+  box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.018);
+  backdrop-filter: blur(24px) saturate(1.05);
+}
+
+.visual-night .bottom-nav::after,
+.visual-night[data-active-tab="devices"] .bottom-nav::after {
+  right: -1px;
+  left: -1px;
+  background: #151d23;
+}
+
+.visual-night .bottom-nav button {
+  gap: 3px;
+  color: #939ba3;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.visual-night .bottom-nav .nav-icon {
+  display: grid;
+  width: 31px;
+  height: 29px;
+  place-items: center;
+}
+
+.visual-night .bottom-nav button.active {
+  color: #deb365;
+}
+
+/* Carry the approved card proportions and restrained borders through every
+ * non-home night screen while keeping its information architecture intact. */
+.visual-night :is(
+  .feature-banner,
+  .scene-card,
+  .rule-card,
+  .profile-card,
+  .content-section,
+  .control-panel,
+  .builder-card,
+  .physical-device-list > button,
+  .channel-list > button,
+  .yard-management-area-cards > button,
+  .yard-area-device-list > button,
+  .light-group-hero,
+  .light-group-editor-intro
+) {
+  border-color: rgba(176, 188, 198, 0.17);
+  border-radius: 18px;
+  background-color: #182129;
+  background-image: linear-gradient(128deg, rgba(255, 255, 255, 0.018), transparent 64%);
+  box-shadow: 0 9px 24px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.018);
+}
+
+.visual-night :is(.scene-play, .rule-main, .profile-card, .builder-copy) strong,
+.visual-night :is(.section-title, .panel-heading) > span {
+  color: #f1eee7;
+  font-weight: 540;
+}
+
+.visual-night :is(.scene-play, .rule-main, .profile-card, .builder-copy) :is(small, p, em) {
+  color: #a5aaa8;
+  font-weight: 400;
+}
+
+.visual-night :is(.primary-button, .floating-action) {
+  border-color: rgba(239, 194, 118, 0.62);
+  background: linear-gradient(135deg, #e9ba6b, #bd7f39);
+  box-shadow: 0 8px 20px rgba(157, 94, 29, 0.15), inset 0 1px 0 rgba(255, 243, 219, 0.23);
+}
+
+/* Pixel-sampled palette correction from the approved reference. */
+.visual-night .devices-page {
+  background-color: #0e161d;
+  background-image: linear-gradient(180deg, #0e161d 0%, #0c141b 100%);
+}
+
+.visual-night .night-devices-top .icon-button {
+  border-color: rgba(151, 164, 176, 0.2);
+  background: rgba(13, 19, 25, 0.5);
+}
+
+.visual-night .night-devices-top .hero-status-icon {
+  border-color: rgba(222, 179, 101, 0.46);
+  color: #deb365;
+  background: rgba(15, 23, 30, 0.5);
+}
+
+.visual-night .night-devices-top .hero-status strong {
+  color: #f3f2ee;
+}
+
+.visual-night .night-devices-top .hero-status small {
+  color: #b6bcc2;
+}
+
+.visual-night .app-switch.on {
+  border-color: rgba(222, 179, 101, 0.48);
+  background: linear-gradient(90deg, #9a7348, #b88c53);
+  box-shadow: inset 0 1px 0 rgba(255, 239, 211, 0.15), 0 4px 12px rgba(111, 77, 40, 0.14);
+}
+
+.visual-night .device-title-row em {
+  color: #d7ad63;
+  background: rgba(171, 132, 85, 0.15);
+}
+
+.visual-night :is(.primary-button, .floating-action) {
+  border-color: rgba(222, 179, 101, 0.58);
+  background: linear-gradient(135deg, #d9ad63, #a98251);
+  box-shadow: 0 8px 20px rgba(86, 60, 34, 0.16), inset 0 1px 0 rgba(255, 243, 221, 0.18);
+}
+
+/* Night surface hierarchy.
+ * Canvas -> primary card -> inset control -> selected/accent state.
+ * Section wrappers stay structural so a card never visually merges into an
+ * identical parent card. */
+.visual-night .root-page > .flush-section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.visual-night .root-page > .flush-section > .section-title {
+  padding: 0 2px 9px;
+}
+
+.visual-night .root-page > .flush-section > :is(.scene-list, .rule-list, .settings-list) {
+  margin-top: 0;
+}
+
+.visual-night .root-page > .flush-section > .settings-list,
+.visual-night .root-page > .flush-section .scene-card,
+.visual-night .root-page > .flush-section .rule-card,
+.visual-night .physical-device-list > button,
+.visual-night .channel-list > button,
+.visual-night .yard-management-area-cards > button,
+.visual-night .yard-area-device-list > button {
+  border-color: rgba(176, 188, 198, 0.18);
+  background-color: var(--night-surface);
+  background-image: linear-gradient(128deg, rgba(255, 255, 255, 0.018), transparent 64%);
+  box-shadow: 0 9px 24px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.018);
+}
+
+.visual-night :is(.automation-tabs, .segment-tabs, .yard-management-tabs) {
+  border-color: rgba(176, 188, 198, 0.12);
+  background: var(--night-canvas-raised);
+  box-shadow: inset 0 1px 7px rgba(0, 0, 0, 0.2);
+}
+
+.visual-night .root-page > .flush-section > .execution-summary,
+.visual-night :is(.content-section, .control-panel, .profile-card, .builder-card, .light-group-hero, .light-group-editor-intro) > :is(
+  .control-panel,
+  .settings-list,
+  .select-list,
+  .channel-toggle-list,
+  .value-row,
+  .association-row,
+  .yard-management-inline-list
+),
+.visual-night .content-section :is(
+  .effect-card,
+  .diy-card,
+  .light-group-color-grid button,
+  .light-group-member-list > div,
+  .light-member-select-list > button,
+  .installer-scope-list label,
+  .yard-area-management-list > div
+) {
+  border-color: rgba(176, 188, 198, 0.13);
+  background-color: var(--night-surface-soft);
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.012), transparent 62%);
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.18);
+}
+
+.visual-night .detail-page .content-section > :is(.value-row, .association-row),
+.visual-night .detail-page .content-section > :is(.settings-list, .select-list, .channel-toggle-list),
+.visual-night .detail-page .content-section :is(.effect-card, .diy-card),
+.visual-night .detail-page .content-section :is(.light-group-color-grid button, .light-group-member-list > div, .light-member-select-list > button) {
+  border-color: rgba(176, 188, 198, 0.13);
+  background-color: var(--night-surface-soft);
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.012), transparent 62%);
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.18);
+}
+
+.visual-night .content-section :is(.speed-row, .preset-row, .choice-grid) button:not(.selected),
+.visual-night .content-section .weekday-grid button:not(.selected),
+.visual-night .channel-form-section :is(.channel-type-grid, .channel-area-track) button:not(.selected) {
+  border-color: rgba(176, 188, 198, 0.13);
+  color: var(--night-text-secondary);
+  background: var(--night-surface-soft);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.16);
+}
+
+.visual-night :is(.content-section, .control-panel) > :is(.settings-list, .select-list, .channel-toggle-list) > :is(button, div) {
+  border-bottom-color: rgba(176, 188, 198, 0.11);
+}
+
+.visual-night :is(.content-section, .control-panel) > :is(.settings-list, .select-list, .channel-toggle-list) > :is(button, div):last-child {
+  border-bottom-color: transparent;
+}
+
+.visual-night :is(
+  .effect-card,
+  .light-member-select-list > button,
+  .installer-scope-list label,
+  .channel-type-grid button,
+  .channel-area-track button,
+  .yard-device-area-grid button
+).selected,
+.visual-night .night-yard-option[aria-current="true"] {
+  border-color: var(--night-line-strong);
+  color: var(--night-accent-strong);
+  background-color: var(--night-accent-surface);
+  background-image: linear-gradient(145deg, rgba(222, 179, 101, 0.075), transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 239, 211, 0.045);
+}
+
+.visual-night .root-page > .profile-card,
+.visual-night .device-management-page > .management-summary,
+.visual-night :is(.controller-overview, .controller-stats, .channel-editor-summary) {
+  background-color: var(--night-surface-raised);
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.022), transparent 66%);
+}
+
+.visual-night .root-page > .flush-section > .execution-summary {
+  min-height: 66px;
+  padding: 11px 13px;
+  border: 1px solid rgba(176, 188, 198, 0.13);
+  border-radius: 16px;
+}
+
+.visual-night .scene-editor-page > .content-section .step-list > button {
+  border: 1px solid rgba(176, 188, 198, 0.13);
+  border-radius: 13px;
+  background-color: var(--night-surface-soft);
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.012), transparent 62%);
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.18);
+}
+
+.visual-night .scene-editor-page > .content-section .step-list > button > svg {
+  color: var(--night-text-tertiary);
+}
+
+.visual-night .scene-editor-page .empty-step-copy {
+  border-color: rgba(176, 188, 198, 0.13);
+  color: var(--night-text-tertiary);
+  background: var(--night-surface-soft);
+}
+
+/* Device cards aligned to the approved night mockup: charcoal blue-gray
+ * surfaces with restrained contrast, instead of the earlier brighter blue
+ * gradient. */
+.visual-night .devices-page .device-card,
+.visual-night .devices-page .night-light-group-card {
+  border-color: var(--night-card-line);
+  color: #f1f1ee;
+  background-color: var(--night-surface);
+  background-image: var(--night-card-background);
+  box-shadow: var(--night-card-shadow);
+  backdrop-filter: none;
+}
+
+.visual-night .devices-page .device-title {
+  color: #f1f1ee;
+}
+
+.visual-night .devices-page :is(.device-state, .device-meta) {
+  color: #9fa3a6;
+}
+
+.visual-night .devices-page .device-state.on,
+.visual-night .devices-page .device-title-row em {
+  color: #e8b25f;
+}
+
+.visual-night .devices-page .device-state.on i {
+  background: #efbd6b;
+}
+
+/* Keep the yard switcher on the same raised / inset / accent surface scale. */
+:root[data-yard-visual="night"] .bottom-sheet:has(.night-yard-switcher) {
+  border-color: rgba(176, 188, 198, 0.18);
+  background-color: var(--night-surface-raised);
+  background-image:
+    radial-gradient(circle at 88% 0%, rgba(222, 179, 101, 0.065), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 52%);
+}
+
+:root[data-yard-visual="night"] .night-yard-option {
+  border: 1px solid rgba(176, 188, 198, 0.14);
+  border-radius: 16px;
+  color: var(--night-text);
+  background-color: var(--night-surface-soft);
+  background-image: linear-gradient(140deg, rgba(255, 255, 255, 0.013), transparent 65%);
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.18);
+}
+
+:root[data-yard-visual="night"] .night-yard-option[aria-current="true"] {
+  border-color: var(--night-line-strong);
+  color: var(--night-accent-strong);
+  background-color: var(--night-accent-surface);
+  background-image: linear-gradient(140deg, rgba(222, 179, 101, 0.075), transparent 64%);
+  box-shadow: inset 0 1px 0 rgba(255, 239, 211, 0.045);
+}
+
+:root[data-yard-visual="night"] .night-yard-option-icon {
+  border-color: rgba(222, 179, 101, 0.14);
+  color: var(--night-accent-strong);
+  background: var(--night-accent-soft);
+}
+
+:root[data-yard-visual="night"] .night-yard-option-copy strong {
+  color: var(--night-text);
+}
+
+:root[data-yard-visual="night"] .night-yard-option-copy :is(small, em) {
+  color: var(--night-text-secondary);
+}
+
+:root[data-yard-visual="night"] .night-yard-option:not([aria-current="true"]) > svg {
+  color: var(--night-text-tertiary);
+}
+
+:root[data-yard-visual="night"] .night-yard-actions {
+  border-top-color: rgba(176, 188, 198, 0.14);
+}
+
+:root[data-yard-visual="night"] .night-yard-actions .primary-button {
+  border-color: rgba(222, 179, 101, 0.58);
+  color: #17140f;
+  background: linear-gradient(135deg, #d9ad63, #a98251);
+  box-shadow: 0 8px 20px rgba(86, 60, 34, 0.16), inset 0 1px 0 rgba(255, 243, 221, 0.18);
+}
+
+:root[data-yard-visual="night"] .night-yard-actions .secondary-button {
+  border-color: rgba(176, 188, 198, 0.18);
+  color: var(--night-text-secondary);
+  background: var(--night-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.018);
+}
+
+:root[data-yard-visual="night"] .night-yard-actions .yard-manage-current {
+  color: var(--night-accent-strong);
+}
+
+/* Share the approved home-card surface across every primary night card.
+ * Nested controls intentionally keep --night-surface-soft and selected/status
+ * elements keep their semantic accent surfaces. */
+.visual-night :is(
+  .scene-card,
+  .rule-card,
+  .profile-card,
+  .builder-card,
+  .utility-status,
+  .light-group-hero,
+  .light-group-editor-intro,
+  .light-device-settings-summary,
+  .controller-overview,
+  .controller-stats,
+  .channel-editor-summary,
+  .yard-create-form-card,
+  .yard-management-profile-card,
+  .management-summary,
+  .management-note,
+  .add-device-help,
+  .nearby-device-card,
+  .empty-state-card,
+  .device-empty-state,
+  .physical-device-list > button,
+  .channel-list > button,
+  .yard-management-area-cards > button,
+  .yard-area-device-list > button,
+  .yard-management-stats > div,
+  .permission-note
+),
+.visual-night :is(.root-page, .detail-page, .yard-subpage) > :is(.content-section, .control-panel):not(.flush-section),
+.visual-night .root-page > .flush-section > :is(.settings-list, .execution-summary) {
+  border-color: var(--night-card-line);
+  background-color: var(--night-surface);
+  background-image: var(--night-card-background);
+  box-shadow: var(--night-card-shadow);
+  backdrop-filter: none;
+}
+
+.visual-night .management-light-group-card {
+  border-color: var(--night-card-line) !important;
+  background-color: var(--night-surface) !important;
+  background-image: var(--night-card-background) !important;
+  box-shadow: var(--night-card-shadow) !important;
+}
+
+.visual-night .root-page > .flush-section .scene-card,
+.visual-night .root-page > .flush-section .rule-card,
+.visual-night .root-page > .profile-card,
+.visual-night .device-management-page > .management-summary,
+.visual-night .device-management-page .physical-device-list > button {
+  border-color: var(--night-card-line);
+  background-color: var(--night-surface);
+  background-image: var(--night-card-background);
+  box-shadow: var(--night-card-shadow);
+  backdrop-filter: none;
 }

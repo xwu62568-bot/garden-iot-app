@@ -55,19 +55,25 @@ test("yard data and permissions stay isolated across all root tabs", async ({ pa
   await expect(page.getByText("父母家廊灯", { exact: true })).toHaveCount(0);
 });
 
-test("creates an empty yard with location timezone and initial areas", async ({ page }) => {
+test("single-page yard creation auto-detects timezone and submits once", async ({ page }) => {
   await openPrototype(page, "warm");
   await page.getByRole("button", { name: "切换庭院" }).click();
   await page.getByRole("button", { name: "新建庭院" }).click();
 
+  const systemTimezone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  await expect(page.getByTestId("create-yard-single-page")).toBeVisible();
+  await expect(page.getByTestId("create-yard-next")).toHaveCount(0);
+  await expect(page.getByTestId("create-yard-timezone-trigger")).toContainText(systemTimezone);
+
   await page.getByTestId("create-yard-name").fill("湖畔小院");
-  await page.getByTestId("create-yard-next").click();
-  await page.getByRole("button", { name: "杭州" }).click();
-  await expect(page.getByTestId("create-yard-timezone")).toContainText("Asia/Shanghai");
-  await page.getByTestId("create-yard-next").click();
+  await page.getByTestId("create-yard-location-trigger").click();
+  await page.getByRole("button", { name: "中国 · 杭州", exact: true }).click();
+  await expect(page.getByTestId("create-yard-timezone-trigger")).toContainText("Asia/Shanghai");
+  await page.getByTestId("create-yard-timezone-trigger").click();
+  await page.getByRole("button", { name: "Asia/Tokyo", exact: true }).click();
+  await expect(page.getByTestId("create-yard-timezone-trigger")).toContainText("已手动选择");
   await page.getByTestId("flow-current").getByRole("button", { name: "前院" }).click();
   await page.getByTestId("flow-current").getByRole("button", { name: "露台" }).click();
-  await page.getByTestId("create-yard-next").click();
   await page.getByTestId("finish-create-yard").click();
 
   await expect(page.getByTestId("active-yard-name")).toHaveText("湖畔小院");
@@ -77,6 +83,82 @@ test("creates an empty yard with location timezone and initial areas", async ({ 
   await expect(page.getByText("还没有场景")).toBeVisible();
   await page.getByTestId("tab-automation").click();
   await expect(page.getByText("还没有定时")).toBeVisible();
+});
+
+for (const visual of ["night", "warm"] as const) {
+  test(`${visual} yard switcher keeps actions outside the scrollable list`, async ({ page }) => {
+    await openPrototype(page, visual);
+    await page.getByRole("button", { name: "切换庭院" }).first().click();
+
+    const sheet = page.getByTestId("bottom-sheet");
+    const list = page.locator(".yard-switcher-scroll");
+    const actions = page.locator(".yard-switcher-fixed-actions");
+    await expect(list).toBeVisible();
+    await expect(actions).toBeVisible();
+    await expect(actions.getByRole("button", { name: "新建庭院" })).toBeVisible();
+    await expect(actions.getByRole("button", { name: "管理当前庭院" })).toBeVisible();
+
+    const metrics = await page.evaluate(() => {
+      const sheetElement = document.querySelector('[data-testid="bottom-sheet"]') as HTMLElement;
+      const listElement = document.querySelector(".yard-switcher-scroll") as HTMLElement;
+      const listContentElement = listElement.firstElementChild as HTMLElement;
+      const actionsElement = document.querySelector(".yard-switcher-fixed-actions") as HTMLElement;
+      return {
+        overflowY: getComputedStyle(listElement).overflowY,
+        listClientHeight: listElement.clientHeight,
+        listContentHeight: listContentElement.offsetHeight,
+        actionsBottom: actionsElement.getBoundingClientRect().bottom,
+        sheetBottom: sheetElement.getBoundingClientRect().bottom,
+        shellScrollWidth: (sheetElement.querySelector(".yard-switcher-shell") as HTMLElement).scrollWidth,
+        shellClientWidth: (sheetElement.querySelector(".yard-switcher-shell") as HTMLElement).clientWidth,
+      };
+    });
+    const buttonHeights = await actions.getByRole("button").evaluateAll((buttons) => buttons.map((button) => (button as HTMLElement).offsetHeight));
+    expect(metrics.overflowY).toBe("auto");
+    expect(metrics.listClientHeight).toBeLessThanOrEqual(metrics.listContentHeight + 1);
+    expect(metrics.actionsBottom).toBeLessThanOrEqual(metrics.sheetBottom);
+    expect(metrics.shellScrollWidth).toBeLessThanOrEqual(metrics.shellClientWidth);
+    expect(buttonHeights.every((height) => height <= 52)).toBe(true);
+    await expect(sheet).toBeVisible();
+  });
+}
+
+test("yard management uses profile area and member tabs with area summaries", async ({ page }) => {
+  await openPrototype(page, "warm");
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: "管理当前庭院" }).click();
+
+  const management = page.getByTestId("yard-management");
+  await expect(management.getByRole("tab", { name: "资料" })).toBeVisible();
+  await expect(management.getByRole("tab", { name: "区域" })).toHaveAttribute("aria-selected", "true");
+  await expect(management.getByRole("tab", { name: "成员" })).toBeVisible();
+  await expect(management.getByTestId("yard-area-card-前院")).toContainText("庭院路径灯");
+  await expect(management.getByTestId("yard-area-card-前院")).toContainText("庭院门");
+
+  await management.getByTestId("yard-area-card-前院").click();
+  await expect(page.getByRole("heading", { name: "前院" })).toBeVisible();
+  await page.getByTestId("detail-back").click();
+  await management.getByRole("tab", { name: "成员" }).click();
+  await expect(management.getByText("安装服务", { exact: true })).toBeVisible();
+});
+
+test("area detail moves a dry-contact logical device and updates home filtering", async ({ page }) => {
+  await openPrototype(page, "warm");
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: "管理当前庭院" }).click();
+  await page.getByTestId("yard-area-card-前院").click();
+  await page.getByTestId("area-device-channel-1").click();
+  await page.getByRole("button", { name: "后院", exact: true }).click();
+  await page.getByTestId("save-logical-device-area").click();
+  await expect(page.getByRole("status")).toContainText("庭院门已移动到后院");
+
+  await page.getByTestId("detail-back").click();
+  await expect(page.getByTestId("yard-area-card-后院")).toContainText("庭院门");
+  await page.getByTestId("detail-back").click();
+  await page.getByLabel("庭院区域").getByRole("button", { name: "前院", exact: true }).click();
+  await expect(page.getByTestId("device-gate")).toHaveCount(0);
+  await page.getByLabel("庭院区域").getByRole("button", { name: "后院", exact: true }).click();
+  await expect(page.getByTestId("device-gate")).toBeVisible();
 });
 
 test("joins a yard from a valid invitation", async ({ page }) => {
@@ -110,14 +192,16 @@ test("owner updates yard profile and cannot remove an area in use", async ({ pag
   await openPrototype(page);
   await page.getByRole("button", { name: "切换庭院" }).click();
   await page.getByRole("button", { name: "管理当前庭院" }).click();
+  await page.getByRole("tab", { name: "资料" }).click();
   await page.getByRole("button", { name: "庭院资料" }).click();
   await page.getByTestId("yard-profile-name").fill("我的花园");
   await page.getByTestId("save-yard-profile").click();
   await expect(page.getByRole("status")).toContainText("庭院资料已保存");
 
-  await page.getByRole("button", { name: "区域管理" }).click();
+  await page.getByRole("tab", { name: "区域" }).click();
+  await page.getByTestId("yard-area-card-露台").click();
   await page.getByRole("button", { name: "删除露台" }).click();
-  await expect(page.getByRole("alert")).toHaveText("请先移动露台中的设备");
+  await expect(page.getByRole("alert")).toContainText("个设备仍在使用此区域");
 });
 
 test("member sees read-only yard information", async ({ page }) => {
@@ -128,6 +212,7 @@ test("member sees read-only yard information", async ({ page }) => {
   await page.getByRole("button", { name: "管理当前庭院" }).click();
   await expect(page.getByText("只读访问")).toBeVisible();
   await expect(page.getByTestId("save-yard-profile")).toHaveCount(0);
+  await page.getByRole("tab", { name: "资料" }).click();
   await expect(page.getByRole("button", { name: "退出庭院" })).toBeVisible();
 });
 
@@ -152,8 +237,8 @@ test("expired installer membership cannot become active", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-09-01T08:00:00+08:00"));
   await openPrototype(page);
   await page.getByRole("button", { name: "切换庭院" }).click();
-  await page.getByRole("button", { name: /切换到客户庭院/ }).click();
-  await expect(page.getByRole("status")).toContainText("授权已到期");
+  await expect(page.getByRole("button", { name: /切换到客户庭院/ })).toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByRole("button", { name: /切换到客户庭院/ })).toContainText("授权已过期");
   await expect(page.getByTestId("yard-app")).toHaveAttribute("data-yard-id", "my-yard");
 });
 

@@ -4,16 +4,17 @@ const testPort = Number(process.env.MOBILE_RUNTIME_TEST_PORT ?? 4174);
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: "**/*.spec.ts",
-  testIgnore: ["**/export-screenshots.spec.ts"],
-  timeout: 20_000,
+  testMatch: "export-screenshots.spec.ts",
+  timeout: 120_000,
+  workers: 1,
+  fullyParallel: false,
   use: {
     baseURL: `http://127.0.0.1:${testPort}`,
     viewport: { width: 1100, height: 1100 },
   },
   webServer: {
     command: `npm run dev -- --port ${testPort}`,
-    url: `http://127.0.0.1:${testPort}/tests/runtime-fixture.html`,
+    url: `http://127.0.0.1:${testPort}/`,
     reuseExistingServer: process.env.MOBILE_RUNTIME_TEST_PORT == null,
   },
 });
