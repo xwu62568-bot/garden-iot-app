@@ -112,7 +112,7 @@ const STEPS: ScreenshotStep[] = [
     slug: "me-home",
     run: async (page) => {
       await page.getByTestId("tab-me").click();
-      await expect(page.getByText("庭院所有者", { exact: true }).first()).toBeVisible();
+      await expect(page.getByText("庭院拥有者", { exact: true }).first()).toBeVisible();
     },
   },
   {
@@ -251,17 +251,20 @@ const STEPS: ScreenshotStep[] = [
     slug: "members",
     run: async (page, visual) => {
       await openYardManagement(page, visual);
-      await page.getByRole("button", { name: "家庭与成员" }).click();
+      await page.getByRole("tab", { name: "成员" }).click();
+      await page.getByRole("button", { name: "管理成员与权限" }).click();
       await expect(page.getByText("林先生", { exact: true })).toBeVisible();
     },
   },
   {
     index: 21,
-    slug: "installer-authorization",
+    slug: "add-member-permission",
     run: async (page, visual) => {
       await openYardManagement(page, visual);
-      await page.getByRole("button", { name: "临时安装商权限" }).click();
-      await expect(page.getByText("DC12 控制器", { exact: true })).toBeVisible();
+      await page.getByRole("tab", { name: "成员" }).click();
+      await page.getByRole("button", { name: "管理成员与权限" }).click();
+      await page.getByTestId("add-yard-member").click();
+      await expect(page.getByText("安装商不再是权限角色")).toBeVisible();
     },
   },
   {

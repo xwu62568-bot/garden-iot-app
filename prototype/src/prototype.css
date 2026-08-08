@@ -7434,3 +7434,288 @@ button {
   box-shadow: var(--night-card-shadow);
   backdrop-filter: none;
 }
+
+/* Three-role yard permissions */
+.yard-role-overview {
+  display: grid;
+  gap: 9px;
+}
+
+.yard-role-overview > div {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 3px 11px;
+  align-items: center;
+  padding: 13px;
+  border: 1px solid #263748;
+  border-radius: 15px;
+  background: #111c28;
+}
+
+.yard-role-overview > div > span {
+  display: grid;
+  grid-row: 1 / span 2;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  color: #e7b565;
+  background: rgb(231 181 101 / 10%);
+}
+
+.yard-role-overview strong {
+  font-size: 12px;
+}
+
+.yard-role-overview small {
+  color: #91a0ad;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.yard-role-overview > div.current {
+  border-color: rgb(231 181 101 / 30%);
+  background: rgb(231 181 101 / 7%);
+}
+
+.yard-role-overview.compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.yard-role-overview.compact > div {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  min-width: 0;
+  padding: 11px 9px;
+}
+
+.yard-role-overview.compact small {
+  font-size: 8px;
+}
+
+.yard-member-section-title {
+  padding-inline: 2px;
+}
+
+.yard-permission-member-list > button,
+.transfer-target-list > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #263748;
+  border-radius: 15px;
+  color: #eef4fa;
+  text-align: left;
+  background: #111c28;
+}
+
+.yard-permission-member-list > button:disabled {
+  opacity: 1;
+}
+
+.yard-permission-member-list > button > span:first-child,
+.transfer-target-list > button > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.yard-permission-member-list > button > span:first-child > span,
+.transfer-target-list > button > span:first-child > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.yard-permission-member-list strong,
+.transfer-target-list strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yard-permission-member-list small,
+.transfer-target-list small {
+  color: #91a0ad;
+  font-size: 8px;
+}
+
+.yard-role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #aab5bf;
+  background: rgb(170 181 191 / 9%);
+  font-size: 9px;
+}
+
+.yard-role-badge.role-owner {
+  color: #e7b565;
+  background: rgb(231 181 101 / 11%);
+}
+
+.yard-role-badge.role-user {
+  color: #b8c8d5;
+  background: rgb(142 171 195 / 11%);
+}
+
+.yard-member-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.member-choice-section {
+  display: grid;
+  gap: 8px;
+}
+
+.member-choice-section > strong {
+  font-size: 10px;
+}
+
+.member-role-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.member-role-choices > button {
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 12px;
+  border: 1px solid #2b3d4d;
+  border-radius: 13px;
+  color: #eef4fa;
+  text-align: left;
+  background: #111c28;
+}
+
+.member-role-choices > button strong {
+  font-size: 11px;
+}
+
+.member-role-choices > button small {
+  color: #91a0ad;
+  font-size: 8px;
+}
+
+.member-role-choices > button.selected {
+  border-color: rgb(231 181 101 / 36%);
+  color: #e7b565;
+  background: rgb(231 181 101 / 8%);
+}
+
+.transfer-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid rgb(231 181 101 / 18%);
+  border-radius: 14px;
+  color: #e7b565;
+  background: rgb(231 181 101 / 7%);
+}
+
+.transfer-warning span {
+  display: grid;
+  gap: 4px;
+}
+
+.transfer-warning strong {
+  color: #eef4fa;
+  font-size: 11px;
+}
+
+.transfer-warning small {
+  color: #a6b0b8;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.transfer-target-list {
+  display: grid;
+  gap: 8px;
+  max-height: 245px;
+  overflow-y: auto;
+}
+
+.transfer-target-list > button.selected {
+  border-color: rgb(231 181 101 / 36%);
+  color: #e7b565;
+  background: rgb(231 181 101 / 8%);
+}
+
+.visual-night :is(.yard-role-overview > div, .yard-permission-member-list > button, .transfer-target-list > button, .member-role-choices > button) {
+  border-color: var(--night-card-line);
+  color: var(--night-text);
+  background-color: var(--night-surface);
+  background-image: var(--night-card-background);
+  box-shadow: var(--night-card-shadow);
+}
+
+.visual-warm .yard-role-overview > div,
+.visual-warm .yard-permission-member-list > button,
+:root[data-yard-visual="warm"] .transfer-target-list > button,
+:root[data-yard-visual="warm"] .member-role-choices > button {
+  border-color: #e8e3d9;
+  color: #203923;
+  background: #fffefb;
+  box-shadow: 0 6px 18px rgb(75 61 36 / 5%);
+}
+
+.visual-warm .yard-role-overview > div > span {
+  color: #315f35;
+  background: #edf4ec;
+}
+
+.visual-warm .yard-role-overview small,
+.visual-warm .yard-permission-member-list small,
+:root[data-yard-visual="warm"] .transfer-target-list small,
+:root[data-yard-visual="warm"] .member-role-choices small {
+  color: #7d877d;
+}
+
+.visual-warm .yard-role-overview > div.current,
+:root[data-yard-visual="warm"] .transfer-target-list > button.selected,
+:root[data-yard-visual="warm"] .member-role-choices > button.selected {
+  border-color: #7b9a79;
+  color: #315f35;
+  background: #f1f6ef;
+}
+
+.visual-warm .yard-role-badge {
+  color: #687568;
+  background: #f0f2ed;
+}
+
+.visual-warm .yard-role-badge.role-owner,
+.visual-warm .yard-role-badge.role-user {
+  color: #315f35;
+  background: #edf4ec;
+}
+
+:root[data-yard-visual="warm"] .transfer-warning {
+  border-color: #d8e2d4;
+  color: #315f35;
+  background: #edf4ec;
+}
+
+:root[data-yard-visual="warm"] .transfer-warning strong {
+  color: #203923;
+}
+
+:root[data-yard-visual="warm"] .transfer-warning small {
+  color: #6f7b70;
+}

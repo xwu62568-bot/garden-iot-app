@@ -72,7 +72,8 @@ type RootTab = "devices" | "scenes" | "automation" | "me";
 type AutomationTab = "schedule" | "linkage";
 type VisualMode = "night" | "warm";
 
-type YardRole = "owner" | "member" | "installer";
+type YardRole = "owner" | "user" | "guest";
+type YardAccountKind = "household" | "installer";
 
 type YardProfile = {
   name: string;
@@ -107,8 +108,8 @@ type RemoveAreaResult = "removed" | "in-use" | "last-area" | "missing";
 type YardMembership = {
   role: YardRole;
   roleLabel: string;
-  expiresAt: string | null;
-  authorizedDeviceIds: string[];
+  accountKind: YardAccountKind;
+  accountLabel: string;
 };
 
 type YardMember = {
@@ -116,9 +117,8 @@ type YardMember = {
   name: string;
   role: YardRole;
   roleLabel: string;
-  status: "active" | "expired";
-  expiresAt: string | null;
-  authorizedDeviceIds: string[];
+  accountKind: YardAccountKind;
+  accountLabel: string;
 };
 
 type YardPermissions = {
@@ -129,6 +129,8 @@ type YardPermissions = {
   addDevices: boolean;
   configureController: boolean;
   manageYard: boolean;
+  manageMembers: boolean;
+  transferYard: boolean;
 };
 
 type RootTabState = {
@@ -227,6 +229,7 @@ type LightGroupStatus = {
 
 type YardWorkspace = {
   id: string;
+  currentMemberId: string;
   profile: YardProfile;
   membership: YardMembership;
   members: YardMember[];
@@ -250,7 +253,7 @@ type YardState = {
   activeYardId: string;
   activeYard: YardWorkspace;
   permissions: YardPermissions;
-  switchYard: (yardId: string) => "switched" | "expired" | "missing";
+  switchYard: (yardId: string) => "switched" | "missing";
   setSelectedArea: (area: string) => void;
   createYard: (input: CreateYardInput) => string;
   lookupInvite: (code: string) => InviteLookupResult;
@@ -259,7 +262,10 @@ type YardState = {
   addYardArea: (yardId: string, name: string) => boolean;
   renameYardArea: (yardId: string, oldName: string, newName: string) => boolean;
   removeYardArea: (yardId: string, name: string) => RemoveAreaResult;
-  updateInstallerAuthorization: (yardId: string, memberId: string, deviceIds: string[], expiresAt: string) => void;
+  addYardMember: (yardId: string, name: string, role: Exclude<YardRole, "owner">, accountKind: YardAccountKind) => string | null;
+  updateYardMemberRole: (yardId: string, memberId: string, role: Exclude<YardRole, "owner">) => boolean;
+  removeYardMember: (yardId: string, memberId: string) => boolean;
+  transferYardOwnership: (yardId: string, memberId: string) => boolean;
   createLightGroup: (input: LightGroupInput) => string;
   updateLightGroup: (groupId: string, input: LightGroupInput) => void;
   deleteLightGroup: (groupId: string) => void;
@@ -337,7 +343,7 @@ const initialSchedules: ScheduleDefinition[] = [
 
 const initialLinkages: LinkageDefinition[] = [
   { id: "gate-light", name: "开门照明", triggers: [{ deviceId: "gate", deviceName: "庭院门", event: "打开" }], condition: "日落至 23:00", actions: [{ deviceId: "light", deviceName: "路径灯", action: "暖白 60% · 5 分钟后关闭" }], enabled: true },
-  { id: "pump-protection", name: "水泵超时保护", triggers: [{ deviceId: "pump", deviceName: "水泵", event: "持续运行 60 分钟" }], condition: null, actions: [{ deviceId: "pump", deviceName: "水泵", action: "关闭并通知所有者" }], enabled: false },
+  { id: "pump-protection", name: "水泵超时保护", triggers: [{ deviceId: "pump", deviceName: "水泵", event: "持续运行 60 分钟" }], condition: null, actions: [{ deviceId: "pump", deviceName: "水泵", action: "关闭并通知拥有者" }], enabled: false },
 ];
 
 const cloneControllerChannels = () => initialControllerChannels.map((channel) => ({ ...channel }));
@@ -411,16 +417,37 @@ const updateLightingMembers = (yard: YardWorkspace, memberIds: string[], patch: 
   auxiliaryLights: yard.auxiliaryLights.map((light) => memberIds.includes(light.id) && light.online ? { ...light, ...patch } : light),
 });
 
+const yardRoleLabel = (role: YardRole) => role === "owner" ? "拥有者" : role === "user" ? "用户" : "访客";
+const yardAccountLabel = (kind: YardAccountKind) => kind === "installer" ? "安装商账号" : "家庭账号";
+
+const makeMember = (id: string, name: string, role: YardRole, accountKind: YardAccountKind = "household"): YardMember => ({
+  id,
+  name,
+  role,
+  roleLabel: yardRoleLabel(role),
+  accountKind,
+  accountLabel: yardAccountLabel(accountKind),
+});
+
+const makeMembership = (role: YardRole, accountKind: YardAccountKind = "household"): YardMembership => ({
+  role,
+  roleLabel: yardRoleLabel(role),
+  accountKind,
+  accountLabel: yardAccountLabel(accountKind),
+});
+
 const ownerMembers = (): YardMember[] => [
-  { id: "owner-lin", name: "林先生", role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] },
-  { id: "member-wang", name: "王女士", role: "member", roleLabel: "普通成员", status: "active", expiresAt: null, authorizedDeviceIds: ["light", "channel-1", "channel-2", "channel-3"] },
-  { id: "installer-service", name: "安装服务", role: "installer", roleLabel: "临时安装商", status: "active", expiresAt: "2026-08-31T23:59:59+08:00", authorizedDeviceIds: ["controller", "channel-1", "channel-2", "channel-3", "channel-4"] },
+  makeMember("owner-lin", "林先生", "owner"),
+  makeMember("member-wang", "王女士", "user"),
+  makeMember("installer-service", "安装服务", "user", "installer"),
+  makeMember("guest-chen", "陈先生", "guest"),
 ];
 
 const makeOwnerYard = (): YardWorkspace => ({
   id: "my-yard",
+  currentMemberId: "owner-lin",
   profile: { name: "我的庭院", city: "上海", timezone: "Asia/Shanghai" },
-  membership: { role: "owner", roleLabel: "所有者", expiresAt: null, authorizedDeviceIds: [] },
+  membership: makeMembership("owner"),
   members: ownerMembers(),
   areas: ["后院", "露台", "泳池", "前院", "车库"],
   light: makeLightDevice("light", "露台灯带", "LS200", "露台", { on: true, brightness: 68, effect: "日落流光", color: "珊瑚橙" }),
@@ -448,11 +475,12 @@ const makeParentChannels = (): ControllerChannel[] => cloneControllerChannels().
 
 const makeParentYard = (): YardWorkspace => ({
   id: "parents-yard",
+  currentMemberId: "current-member",
   profile: { name: "父母家", city: "苏州", timezone: "Asia/Shanghai" },
-  membership: { role: "member", roleLabel: "普通成员", expiresAt: null, authorizedDeviceIds: ["light", "channel-1", "channel-3"] },
+  membership: makeMembership("user"),
   members: [
-    { id: "parent-owner", name: "陈女士", role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] },
-    { id: "current-member", name: "当前账户", role: "member", roleLabel: "普通成员", status: "active", expiresAt: null, authorizedDeviceIds: ["light", "channel-1", "channel-3"] },
+    makeMember("parent-owner", "陈女士", "owner"),
+    makeMember("current-member", "当前账户", "user"),
   ],
   areas: ["门廊", "花园"],
   light: makeLightDevice("light", "父母家廊灯", "WL100", "门廊", { on: false, brightness: 52, effect: "暖白", color: "暖白 2700K", capabilities: ["power", "brightness", "temperature"] }),
@@ -471,11 +499,12 @@ const makeParentYard = (): YardWorkspace => ({
 
 const makeInstallerYard = (): YardWorkspace => ({
   id: "client-yard",
+  currentMemberId: "current-installer",
   profile: { name: "客户庭院", city: "杭州", timezone: "Asia/Shanghai" },
-  membership: { role: "installer", roleLabel: "临时安装商", expiresAt: "2026-08-31T23:59:59+08:00", authorizedDeviceIds: ["controller", "channel-1", "channel-2", "channel-3", "channel-4"] },
+  membership: makeMembership("user", "installer"),
   members: [
-    { id: "client-owner", name: "周先生", role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] },
-    { id: "current-installer", name: "当前账户", role: "installer", roleLabel: "临时安装商", status: "active", expiresAt: "2026-08-31T23:59:59+08:00", authorizedDeviceIds: ["controller", "channel-1", "channel-2", "channel-3", "channel-4"] },
+    makeMember("client-owner", "周先生", "owner"),
+    makeMember("current-installer", "当前账户", "user", "installer"),
   ],
   areas: ["前院", "设备间", "车库"],
   light: makeLightDevice("light", "设备间测试灯", "测试灯", "设备间", { visible: false, on: false, brightness: 0, effect: "未配置", color: "未配置" }),
@@ -492,13 +521,38 @@ const makeInstallerYard = (): YardWorkspace => ({
   selectedArea: "全部",
 });
 
-const makeInitialYards = (): YardWorkspace[] => [makeOwnerYard(), makeParentYard(), makeInstallerYard()];
+const makeInstallerOwnerYard = (): YardWorkspace => ({
+  ...makeInstallerYard(),
+  id: "delivery-yard",
+  currentMemberId: "delivery-installer",
+  profile: { name: "待交付庭院", city: "宁波", timezone: "Asia/Shanghai" },
+  membership: makeMembership("owner", "installer"),
+  members: [
+    makeMember("delivery-installer", "当前安装商", "owner", "installer"),
+    makeMember("delivery-homeowner", "待交付屋主", "user"),
+  ],
+});
 
-const makeEmptyOwnerYard = (id: string, input: CreateYardInput): YardWorkspace => ({
+const makeInstallerGuestYard = (): YardWorkspace => ({
+  ...makeInstallerYard(),
+  id: "inspection-yard",
+  currentMemberId: "inspection-installer",
+  profile: { name: "回访庭院", city: "嘉兴", timezone: "Asia/Shanghai" },
+  membership: makeMembership("guest", "installer"),
+  members: [
+    makeMember("inspection-owner", "许女士", "owner"),
+    makeMember("inspection-installer", "当前安装商", "guest", "installer"),
+  ],
+});
+
+const makeInitialYards = (): YardWorkspace[] => [makeOwnerYard(), makeParentYard(), makeInstallerYard(), makeInstallerOwnerYard(), makeInstallerGuestYard()];
+
+const makeEmptyOwnerYard = (id: string, input: CreateYardInput, accountKind: YardAccountKind): YardWorkspace => ({
   id,
+  currentMemberId: "new-owner",
   profile: { name: input.name, city: input.city, timezone: input.timezone },
-  membership: { role: "owner", roleLabel: "所有者", expiresAt: null, authorizedDeviceIds: [] },
-  members: [{ id: "new-owner", name: "当前账户", role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] }],
+  membership: makeMembership("owner", accountKind),
+  members: [makeMember("new-owner", "当前账户", "owner", accountKind)],
   areas: [...input.areas],
   light: makeLightDevice("light", "庭院灯带", "未配对", input.areas[0] ?? "前院", { visible: false, on: false, brightness: 68, effect: "日落流光", color: "珊瑚橙" }),
   auxiliaryLights: [],
@@ -514,11 +568,12 @@ const makeEmptyOwnerYard = (id: string, input: CreateYardInput): YardWorkspace =
   selectedArea: "全部",
 });
 
-const makeEmptyMemberYard = (id: string, invite: InvitePreview): YardWorkspace => ({
+const makeEmptyMemberYard = (id: string, invite: InvitePreview, accountKind: YardAccountKind): YardWorkspace => ({
   id,
+  currentMemberId: "invite-member",
   profile: { name: invite.yardName, city: invite.city, timezone: invite.timezone },
-  membership: { role: invite.role, roleLabel: invite.roleLabel, expiresAt: invite.validUntil, authorizedDeviceIds: ["light", "channel-1", "channel-2"] },
-  members: [{ id: "invite-owner", name: invite.inviter, role: "owner", roleLabel: "所有者", status: "active", expiresAt: null, authorizedDeviceIds: [] }, { id: "invite-member", name: "当前账户", role: invite.role, roleLabel: invite.roleLabel, status: "active", expiresAt: invite.validUntil, authorizedDeviceIds: ["light", "channel-1", "channel-2"] }],
+  membership: makeMembership(invite.role, accountKind),
+  members: [makeMember("invite-owner", invite.inviter, "owner"), makeMember("invite-member", "当前账户", invite.role, accountKind)],
   areas: ["前院", "后院"],
   light: makeLightDevice("light", "四季庭院灯带", "LS200", "前院", { on: false, brightness: 60, effect: "暖白", color: "暖白 2700K" }),
   auxiliaryLights: [],
@@ -535,17 +590,18 @@ const makeEmptyMemberYard = (id: string, invite: InvitePreview): YardWorkspace =
 });
 
 const permissionsFor = (membership: YardMembership): YardPermissions => ({
-  controlDevices: membership.role !== "installer" || membership.authorizedDeviceIds.length > 0,
-  runScenes: membership.role !== "installer",
-  editScenes: membership.role === "owner",
-  editAutomations: membership.role === "owner",
-  addDevices: membership.role === "owner" || membership.role === "installer",
-  configureController: membership.role === "owner" || membership.role === "installer",
-  manageYard: membership.role === "owner",
+  controlDevices: membership.role !== "guest",
+  runScenes: membership.role !== "guest",
+  editScenes: membership.role !== "guest",
+  editAutomations: membership.role !== "guest",
+  addDevices: membership.role !== "guest",
+  configureController: membership.role !== "guest",
+  manageYard: membership.role !== "guest",
+  manageMembers: membership.role === "owner",
+  transferYard: membership.role === "owner",
 });
 
-const isMembershipExpired = (membership: YardMembership, now = Date.now()) =>
-  Boolean(membership.expiresAt && new Date(membership.expiresAt).getTime() <= now);
+const canEditYardWorkspace = (yard: YardWorkspace) => yard.membership.role !== "guest";
 
 function useYard() {
   const value = useContext(YardContext);
@@ -604,7 +660,6 @@ export default function Prototype() {
   const switchYard = useCallback((yardId: string) => {
     const target = yards.find((yard) => yard.id === yardId);
     if (!target) return "missing" as const;
-    if (isMembershipExpired(target.membership)) return "expired" as const;
     setActiveYardId(yardId);
     setActiveTab("devices");
     return "switched" as const;
@@ -616,16 +671,16 @@ export default function Prototype() {
 
   const createYard = useCallback((input: CreateYardInput) => {
     const id = `yard-${Date.now()}`;
-    setYards((current) => [...current, makeEmptyOwnerYard(id, input)]);
+    setYards((current) => [...current, makeEmptyOwnerYard(id, input, activeYard.membership.accountKind)]);
     setActiveYardId(id);
     setActiveTab("devices");
     return id;
-  }, []);
+  }, [activeYard.membership.accountKind]);
 
   const lookupInvite = useCallback((code: string): InviteLookupResult => {
     const normalized = code.trim().toUpperCase();
     if (normalized === "GARDEN-NEW") {
-      return { status: "ready", invite: { code: normalized, yardName: "四季庭院", inviter: "赵先生", city: "杭州", timezone: "Asia/Shanghai", role: "member", roleLabel: "普通成员", validUntil: "2026-12-31T23:59:59+08:00" } };
+      return { status: "ready", invite: { code: normalized, yardName: "四季庭院", inviter: "赵先生", city: "杭州", timezone: "Asia/Shanghai", role: "user", roleLabel: "用户", validUntil: "2026-12-31T23:59:59+08:00" } };
     }
     if (normalized === "EXPIRED-2026") return { status: "expired", message: "邀请码已过期" };
     if (normalized === "PARENTS-2026") return { status: "joined", message: "你已加入该庭院" };
@@ -634,20 +689,20 @@ export default function Prototype() {
 
   const acceptInvite = useCallback((invite: InvitePreview) => {
     const id = `yard-${Date.now()}`;
-    setYards((current) => [...current, makeEmptyMemberYard(id, invite)]);
+    setYards((current) => [...current, makeEmptyMemberYard(id, invite, activeYard.membership.accountKind)]);
     setActiveYardId(id);
     setActiveTab("devices");
     return id;
-  }, []);
+  }, [activeYard.membership.accountKind]);
 
   const updateYardProfile = useCallback((yardId: string, profile: YardProfile) => {
-    setYards((current) => current.map((yard) => yard.id === yardId ? { ...yard, profile } : yard));
+    setYards((current) => current.map((yard) => yard.id === yardId && canEditYardWorkspace(yard) ? { ...yard, profile } : yard));
   }, []);
 
   const addYardArea = useCallback((yardId: string, name: string) => {
     const normalized = name.trim();
     const target = yards.find((yard) => yard.id === yardId);
-    if (!target || !normalized || target.areas.includes(normalized)) return false;
+    if (!target || !canEditYardWorkspace(target) || !normalized || target.areas.includes(normalized)) return false;
     setYards((current) => current.map((yard) => yard.id === yardId ? { ...yard, areas: [...yard.areas, normalized] } : yard));
     return true;
   }, [yards]);
@@ -655,7 +710,7 @@ export default function Prototype() {
   const renameYardArea = useCallback((yardId: string, oldName: string, newName: string) => {
     const normalized = newName.trim();
     const target = yards.find((yard) => yard.id === yardId);
-    if (!target || !normalized || target.areas.includes(normalized)) return false;
+    if (!target || !canEditYardWorkspace(target) || !normalized || target.areas.includes(normalized)) return false;
     setYards((current) => current.map((yard) => {
       if (yard.id !== yardId) return yard;
       return {
@@ -673,46 +728,82 @@ export default function Prototype() {
 
   const removeYardArea = useCallback((yardId: string, name: string): RemoveAreaResult => {
     const target = yards.find((yard) => yard.id === yardId);
-    if (!target || !target.areas.includes(name)) return "missing";
+    if (!target || !canEditYardWorkspace(target) || !target.areas.includes(name)) return "missing";
     if (target.areas.length <= 1) return "last-area";
     if ((target.light.visible && target.light.area === name) || target.auxiliaryLights.some((light) => light.area === name) || target.lightGroups.some((group) => group.area === name) || target.controllerChannels.some((channel) => channel.configured && channel.area === name)) return "in-use";
     setYards((current) => current.map((yard) => yard.id === yardId ? { ...yard, areas: yard.areas.filter((area) => area !== name), selectedArea: yard.selectedArea === name ? "全部" : yard.selectedArea } : yard));
     return "removed";
   }, [yards]);
 
-  const updateInstallerAuthorization = useCallback((yardId: string, memberId: string, deviceIds: string[], expiresAt: string) => {
+  const addYardMember = useCallback((yardId: string, name: string, role: Exclude<YardRole, "owner">, accountKind: YardAccountKind) => {
+    const normalized = name.trim();
+    const target = yards.find((yard) => yard.id === yardId);
+    if (!target || target.membership.role !== "owner" || !normalized) return null;
+    const id = `member-${Date.now()}`;
+    setYards((current) => current.map((yard) => yard.id === yardId
+      ? { ...yard, members: [...yard.members, makeMember(id, normalized, role, accountKind)] }
+      : yard));
+    return id;
+  }, [yards]);
+
+  const updateYardMemberRole = useCallback((yardId: string, memberId: string, role: Exclude<YardRole, "owner">) => {
+    const target = yards.find((yard) => yard.id === yardId);
+    const member = target?.members.find((item) => item.id === memberId);
+    if (!target || target.membership.role !== "owner" || !member || member.role === "owner") return false;
     setYards((current) => current.map((yard) => {
       if (yard.id !== yardId) return yard;
-      return {
-        ...yard,
-        members: yard.members.map((member) => member.id === memberId && member.role === "installer"
-          ? { ...member, authorizedDeviceIds: [...deviceIds], expiresAt, status: "active" as const }
-          : member),
-      };
+      const members = yard.members.map((item) => item.id === memberId ? { ...item, role, roleLabel: yardRoleLabel(role) } : item);
+      const membership = memberId === yard.currentMemberId ? { ...yard.membership, role, roleLabel: yardRoleLabel(role) } : yard.membership;
+      return { ...yard, members, membership };
     }));
-  }, []);
+    return true;
+  }, [yards]);
+
+  const removeYardMember = useCallback((yardId: string, memberId: string) => {
+    const target = yards.find((yard) => yard.id === yardId);
+    const member = target?.members.find((item) => item.id === memberId);
+    if (!target || target.membership.role !== "owner" || !member || member.role === "owner" || memberId === target.currentMemberId) return false;
+    setYards((current) => current.map((yard) => yard.id === yardId ? { ...yard, members: yard.members.filter((item) => item.id !== memberId) } : yard));
+    return true;
+  }, [yards]);
+
+  const transferYardOwnership = useCallback((yardId: string, memberId: string) => {
+    const target = yards.find((yard) => yard.id === yardId);
+    const nextOwner = target?.members.find((member) => member.id === memberId);
+    if (!target || target.membership.role !== "owner" || !nextOwner || memberId === target.currentMemberId) return false;
+    setYards((current) => current.map((yard) => {
+      if (yard.id !== yardId) return yard;
+      const members = yard.members.map((member) => {
+        if (member.id === memberId) return { ...member, role: "owner" as const, roleLabel: yardRoleLabel("owner") };
+        if (member.id === yard.currentMemberId) return { ...member, role: "guest" as const, roleLabel: yardRoleLabel("guest") };
+        return member.role === "owner" ? { ...member, role: "guest" as const, roleLabel: yardRoleLabel("guest") } : member;
+      });
+      return { ...yard, members, membership: { ...yard.membership, role: "guest", roleLabel: yardRoleLabel("guest") } };
+    }));
+    return true;
+  }, [yards]);
 
   const createLightGroup = useCallback((input: LightGroupInput) => {
     const id = `light-group-${Date.now()}`;
-    updateActiveYard((yard) => ({ ...yard, lightGroups: [{ id, ...input }, ...yard.lightGroups] }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, lightGroups: [{ id, ...input }, ...yard.lightGroups] } : yard);
     return id;
   }, [updateActiveYard]);
 
   const updateLightGroup = useCallback((groupId: string, input: LightGroupInput) => {
-    updateActiveYard((yard) => ({ ...yard, lightGroups: yard.lightGroups.map((group) => group.id === groupId ? { id: groupId, ...input } : group) }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, lightGroups: yard.lightGroups.map((group) => group.id === groupId ? { id: groupId, ...input } : group) } : yard);
   }, [updateActiveYard]);
 
   const deleteLightGroup = useCallback((groupId: string) => {
-    updateActiveYard((yard) => ({ ...yard, lightGroups: yard.lightGroups.filter((group) => group.id !== groupId) }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, lightGroups: yard.lightGroups.filter((group) => group.id !== groupId) } : yard);
   }, [updateActiveYard]);
 
   const setLightDeviceOn = useCallback((deviceId: string, value: boolean) => {
-    updateActiveYard((yard) => updateLightingMembers(yard, [deviceId], { on: value }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? updateLightingMembers(yard, [deviceId], { on: value }) : yard);
   }, [updateActiveYard]);
 
   const updateLightDeviceArea = useCallback((deviceId: string, area: string) => {
     const deviceExists = allLightingDevices(activeYard).some((light) => light.id === deviceId);
-    if (!deviceExists || (area !== "未分区" && !activeYard.areas.includes(area))) return false;
+    if (!canEditYardWorkspace(activeYard) || !deviceExists || (area !== "未分区" && !activeYard.areas.includes(area))) return false;
     updateActiveYard((yard) => ({
       ...yard,
       light: yard.light.id === deviceId ? { ...yard.light, area } : yard.light,
@@ -723,6 +814,7 @@ export default function Prototype() {
 
   const setLightGroupOn = useCallback((groupId: string, value: boolean) => {
     updateActiveYard((yard) => {
+      if (!canEditYardWorkspace(yard)) return yard;
       const group = yard.lightGroups.find((item) => item.id === groupId);
       return group ? updateLightingMembers(yard, group.memberIds, { on: value }) : yard;
     });
@@ -730,6 +822,7 @@ export default function Prototype() {
 
   const setLightGroupBrightness = useCallback((groupId: string, value: number) => {
     updateActiveYard((yard) => {
+      if (!canEditYardWorkspace(yard)) return yard;
       const group = yard.lightGroups.find((item) => item.id === groupId);
       return group ? updateLightingMembers(yard, group.memberIds, { brightness: value, on: value > 0 }) : yard;
     });
@@ -737,6 +830,7 @@ export default function Prototype() {
 
   const setLightGroupEffect = useCallback((groupId: string, value: string) => {
     updateActiveYard((yard) => {
+      if (!canEditYardWorkspace(yard)) return yard;
       const group = yard.lightGroups.find((item) => item.id === groupId);
       return group ? updateLightingMembers(yard, group.memberIds, { effect: value, on: true }) : yard;
     });
@@ -744,56 +838,57 @@ export default function Prototype() {
 
   const setLightGroupColor = useCallback((groupId: string, value: string) => {
     updateActiveYard((yard) => {
+      if (!canEditYardWorkspace(yard)) return yard;
       const group = yard.lightGroups.find((item) => item.id === groupId);
       return group ? updateLightingMembers(yard, group.memberIds, { color: value, on: true }) : yard;
     });
   }, [updateActiveYard]);
 
   const setLightOn = useCallback((value: boolean) => {
-    updateActiveYard((yard) => ({ ...yard, light: { ...yard.light, on: value } }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, light: { ...yard.light, on: value } } : yard);
   }, [updateActiveYard]);
 
   const setBrightness = useCallback((value: number) => {
-    updateActiveYard((yard) => ({ ...yard, light: { ...yard.light, brightness: value } }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, light: { ...yard.light, brightness: value } } : yard);
   }, [updateActiveYard]);
 
   const setLightEffect = useCallback((value: string) => {
-    updateActiveYard((yard) => ({ ...yard, light: { ...yard.light, effect: value } }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, light: { ...yard.light, effect: value } } : yard);
   }, [updateActiveYard]);
 
   const setFountainOn = useCallback((value: boolean) => {
-    updateActiveYard((yard) => ({ ...yard, fountainOn: value }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, fountainOn: value } : yard);
   }, [updateActiveYard]);
 
   const setGateOpen = useCallback((value: boolean) => {
-    updateActiveYard((yard) => ({ ...yard, gateOpen: value }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, gateOpen: value } : yard);
   }, [updateActiveYard]);
 
   const setIrrigationOn = useCallback((value: boolean) => {
-    updateActiveYard((yard) => ({ ...yard, irrigationOn: value }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, irrigationOn: value } : yard);
   }, [updateActiveYard]);
 
   const setIrrigationMode = useCallback((value: string) => {
-    updateActiveYard((yard) => ({ ...yard, irrigationMode: value }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, irrigationMode: value } : yard);
   }, [updateActiveYard]);
 
   const setControllerChannels = useCallback<YardState["setControllerChannels"]>((value) => {
     updateActiveYard((yard) => ({
       ...yard,
-      controllerChannels: typeof value === "function" ? value(yard.controllerChannels) : value,
+      controllerChannels: canEditYardWorkspace(yard) ? (typeof value === "function" ? value(yard.controllerChannels) : value) : yard.controllerChannels,
     }));
   }, [updateActiveYard]);
 
   const setScenes = useCallback<YardState["setScenes"]>((value) => {
-    updateActiveYard((yard) => ({ ...yard, scenes: typeof value === "function" ? value(yard.scenes) : value }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, scenes: typeof value === "function" ? value(yard.scenes) : value } : yard);
   }, [updateActiveYard]);
 
   const setSchedules = useCallback<YardState["setSchedules"]>((value) => {
-    updateActiveYard((yard) => ({ ...yard, schedules: typeof value === "function" ? value(yard.schedules) : value }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, schedules: typeof value === "function" ? value(yard.schedules) : value } : yard);
   }, [updateActiveYard]);
 
   const setLinkages = useCallback<YardState["setLinkages"]>((value) => {
-    updateActiveYard((yard) => ({ ...yard, linkages: typeof value === "function" ? value(yard.linkages) : value }));
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? { ...yard, linkages: typeof value === "function" ? value(yard.linkages) : value } : yard);
   }, [updateActiveYard]);
 
   const selectVisualMode = useCallback((mode: VisualMode) => {
@@ -820,11 +915,11 @@ export default function Prototype() {
   }, []);
 
   const runDinnerScene = useCallback(() => {
-    updateActiveYard((yard) => ({
+    updateActiveYard((yard) => canEditYardWorkspace(yard) ? ({
       ...yard,
       light: { ...yard.light, on: true, brightness: 68, effect: "日落流光" },
       fountainOn: true,
-    }));
+    }) : yard);
     notify("“花园晚宴”已执行 · 4 项成功");
   }, [notify, updateActiveYard]);
 
@@ -843,7 +938,10 @@ export default function Prototype() {
       addYardArea,
       renameYardArea,
       removeYardArea,
-      updateInstallerAuthorization,
+      addYardMember,
+      updateYardMemberRole,
+      removeYardMember,
+      transferYardOwnership,
       createLightGroup,
       updateLightGroup,
       deleteLightGroup,
@@ -890,7 +988,10 @@ export default function Prototype() {
       addYardArea,
       renameYardArea,
       removeYardArea,
-      updateInstallerAuthorization,
+      addYardMember,
+      updateYardMemberRole,
+      removeYardMember,
+      transferYardOwnership,
       createLightGroup,
       updateLightGroup,
       deleteLightGroup,
@@ -1028,7 +1129,7 @@ function AppTopBar({
   );
 }
 
-function NightDevicesTop({ onSelectYard, onAdd }: { onSelectYard: () => void; onAdd: () => void }) {
+function NightDevicesTop({ onSelectYard, onAdd }: { onSelectYard: () => void; onAdd?: () => void }) {
   return (
     <section
       className="night-devices-top"
@@ -1037,7 +1138,7 @@ function NightDevicesTop({ onSelectYard, onAdd }: { onSelectYard: () => void; on
         backgroundImage: `url("${publicAsset("assets/app/night-garden-hero-final.png")}")`,
       }}
     >
-      <AppTopBar selectable onSelectYard={onSelectYard} showNotifications action={{ label: "添加", testId: "add-device", onClick: onAdd }} />
+      <AppTopBar selectable onSelectYard={onSelectYard} showNotifications action={onAdd ? { label: "添加", testId: "add-device", onClick: onAdd } : undefined} />
       <section className="garden-hero" aria-label="庭院运行状态">
         <img src={publicAsset("assets/app/night-garden-hero-final.png")} alt="夜间庭院步道、景观灯与庭院门" draggable={false} />
         <div className="hero-scrim" />
@@ -1050,7 +1151,7 @@ function NightDevicesTop({ onSelectYard, onAdd }: { onSelectYard: () => void; on
   );
 }
 
-function WarmDevicesTop({ onSelectYard, onAdd }: { onSelectYard: () => void; onAdd: () => void }) {
+function WarmDevicesTop({ onSelectYard, onAdd }: { onSelectYard: () => void; onAdd?: () => void }) {
   const yard = useYard();
   return (
     <section className="warm-devices-top" aria-label="庭院运行状态">
@@ -1062,7 +1163,7 @@ function WarmDevicesTop({ onSelectYard, onAdd }: { onSelectYard: () => void; onA
         </button>
         <div className="warm-topbar-actions">
           <button aria-label="通知"><Bell size={24} /></button>
-          <button aria-label="添加" data-testid="add-device" onClick={onAdd}><Plus size={26} /></button>
+          {onAdd ? <button aria-label="添加" data-testid="add-device" onClick={onAdd}><Plus size={26} /></button> : null}
         </div>
       </header>
       <div className="warm-hero-status">
@@ -1084,26 +1185,29 @@ type YardSwitcherContentProps = {
 
 function yardSummary(yard: YardWorkspace) {
   const visibleDevices = [yard.light.visible, ...yard.controllerChannels.filter((channel) => channel.configured && channel.visible).map(() => true)].filter(Boolean).length;
-  const onlineDevices = yard.membership.role === "installer" ? yard.controllerChannels.filter((channel) => channel.configured).length : visibleDevices;
-  return `${onlineDevices}/${Math.max(visibleDevices, onlineDevices)} 台设备在线`;
+  return `${visibleDevices}/${visibleDevices} 台设备在线`;
+}
+
+function yardRoleSummary(role: YardRole) {
+  if (role === "owner") return "完整管理 · 可转移庭院";
+  if (role === "user") return "可操作与创建";
+  return "仅可查看";
 }
 
 function YardOption({ yard, activeYardId, onSelect, visual }: YardSwitcherContentProps & { yard: YardWorkspace; visual: VisualMode }) {
   const isActive = yard.id === activeYardId;
-  const expired = isMembershipExpired(yard.membership);
   return (
     <button
-      className={`${visual}-yard-option ${expired ? "expired" : ""}`}
+      className={`${visual}-yard-option`}
       aria-current={isActive ? "true" : undefined}
-      aria-disabled={expired}
       aria-label={`切换到${yard.profile.name}`}
       onClick={() => onSelect(yard.id)}
     >
       <span className={`${visual}-yard-option-icon`}><House size={visual === "warm" ? 22 : 20} /></span>
       <span className={`${visual}-yard-option-copy`}>
         <strong>{yard.profile.name}</strong>
-        <small>{yard.membership.roleLabel} · {yard.profile.city} · {yard.profile.timezone}</small>
-        <em>{expired ? "授权已过期" : yardSummary(yard)}{yard.membership.expiresAt ? ` · 授权至 ${yard.membership.expiresAt.slice(0, 10)}` : ""}</em>
+        <small>{yard.membership.accountLabel} · {yard.membership.roleLabel} · {yard.profile.city}</small>
+        <em>{yardRoleSummary(yard.membership.role)} · {yardSummary(yard)}</em>
       </span>
       {isActive ? <Check size={19} weight="bold" /> : <CaretRight size={18} />}
     </button>
@@ -1195,7 +1299,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
     <>
       <MobileScroll className={`app-screen dark-screen ${isWarm ? "warm-screen" : ""}`}>
         <main className="root-page devices-page">
-          {isWarm ? <WarmDevicesTop onSelectYard={() => setYardSwitcherOpen(true)} onAdd={() => setAddSheet(true)} /> : <NightDevicesTop onSelectYard={() => setYardSwitcherOpen(true)} onAdd={() => setAddSheet(true)} />}
+          {isWarm ? <WarmDevicesTop onSelectYard={() => setYardSwitcherOpen(true)} onAdd={yard.permissions.addDevices ? () => setAddSheet(true) : undefined} /> : <NightDevicesTop onSelectYard={() => setYardSwitcherOpen(true)} onAdd={yard.permissions.addDevices ? () => setAddSheet(true) : undefined} />}
 
           <Carousel ariaLabel="庭院区域" className="area-carousel" contentClassName="area-track">
             {areas.map((item) => (
@@ -1211,7 +1315,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
           </Carousel>
 
           <section className="device-list" aria-label={`${area}设备`}>
-            {!hasVisibleDevices ? <div className="empty-state-card device-empty-state"><SlidersHorizontal size={30} /><strong>还没有设备</strong><small>添加设备后，它们会出现在这里，并按区域独立管理。</small><button className="primary-button" onClick={() => flow.push(addDeviceScreen())}><Plus size={18} />添加设备</button></div> : null}
+            {!hasVisibleDevices ? <div className="empty-state-card device-empty-state"><SlidersHorizontal size={30} /><strong>还没有设备</strong><small>{yard.permissions.addDevices ? "添加设备后，它们会出现在这里，并按区域独立管理。" : "当前账户只有查看权限。"}</small>{yard.permissions.addDevices ? <button className="primary-button" onClick={() => flow.push(addDeviceScreen())}><Plus size={18} />添加设备</button> : null}</div> : null}
             {visibleLightGroups.map((group) => <LightGroupCard key={group.id} group={group} flow={flow} />)}
             {showPrimaryLight ? <article className="device-card light-card" data-testid="device-lightstrip">
               <button
@@ -1246,6 +1350,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
               {isWarm ? (
                 <span className="warm-light-actions">
                   <Switch
+                    disabled={!yard.permissions.controlDevices}
                     label={`${yard.activeYard.light.name}开关`}
                     value={yard.lightOn}
                     onChange={(value) => {
@@ -1256,6 +1361,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 </span>
               ) : (
                 <Switch
+                  disabled={!yard.permissions.controlDevices}
                   label={`${yard.activeYard.light.name}开关`}
                   value={yard.lightOn}
                   onChange={(value) => {
@@ -1289,6 +1395,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                 </span>
               </button>
               <Switch
+                disabled={!yard.permissions.controlDevices}
                 label="后院喷泉开关"
                 value={yard.fountainOn}
                 onChange={(value) => {
@@ -1311,7 +1418,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                   {!isWarm ? <span className="device-meta"><ShieldCheck size={16} /> {gateChannel.area} · 安全确认后执行</span> : null}
                 </span>
               </button>
-              <button className="outline-action" data-testid="quick-gate" onClick={() => setGateSheet(true)}>
+              <button className="outline-action" data-testid="quick-gate" disabled={!yard.permissions.controlDevices} onClick={() => setGateSheet(true)}>
                 {isWarm ? <>{yard.gateOpen ? "关闭" : "打开"}<ShieldCheck size={17} weight="duotone" /><CaretRight size={16} weight="bold" /></> : <><Lock size={17} />{yard.gateOpen ? "关闭" : "打开"}</>}
               </button>
             </article> : null}
@@ -1329,7 +1436,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                   {!isWarm ? <span className="device-meta">{irrigationChannel.area} · {yard.irrigationOn ? yard.irrigationMode : "下一计划：明日 06:30"}</span> : null}
                 </span>
               </button>
-              <button className="outline-action" data-testid="quick-irrigation" onClick={() => setIrrigationSheet(true)}>
+              <button className="outline-action" data-testid="quick-irrigation" disabled={!yard.permissions.controlDevices} onClick={() => setIrrigationSheet(true)}>
                 {isWarm ? <>{yard.irrigationOn ? "停止" : "启动"}<CaretRight size={16} weight="bold" /></> : <>{yard.irrigationOn ? <Stop size={17} /> : <Play size={17} />}{yard.irrigationOn ? "停止" : "启动"}</>}
               </button>
             </article> : null}
@@ -1348,7 +1455,7 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
                     <span className="device-meta">{channel.area} · DC12 CH{channel.id} · {channel.mode}</span>
                   </span>
                 </button>
-                <button className="outline-action" onClick={() => flow.push(genericChannelDetailScreen(channel))}>控制</button>
+                <button className="outline-action" disabled={!yard.permissions.controlDevices} onClick={() => flow.push(genericChannelDetailScreen(channel))}>控制</button>
               </article>
             ))}
           </section>
@@ -1366,9 +1473,6 @@ function DevicesHome({ flow }: { flow: FlowControls }) {
           if (result === "switched" && target) {
             setYardSwitcherOpen(false);
             yard.notify(`已切换至${target.profile.name}`);
-          } else if (result === "expired") {
-            setYardSwitcherOpen(false);
-            yard.notify("授权已到期，无法进入客户庭院");
           }
         }}
         onCreate={() => {
@@ -1474,6 +1578,7 @@ function LightGroupCard({ group, flow }: { group: LightGroupDefinition; flow: Fl
         </span>
       </button>
       <Switch
+        disabled={!yard.permissions.controlDevices}
         label={`${group.name}组开关`}
         value={status.state !== "all-off"}
         onChange={(value) => {
@@ -1510,22 +1615,22 @@ function LightGroupDetail({ groupId, flow }: { groupId: string; flow: FlowContro
         <section className="light-group-hero">
           <span className="light-group-hero-icon"><LightbulbFilament size={42} weight="duotone" /></span>
           <div><small>{group.area} · {status.members.length} 个灯光</small><h1>{group.name}</h1><p><i className={status.state !== "all-off" ? "on" : ""} />{stateLabel} · {status.onlineCount}/{status.members.length} 在线</p></div>
-          <button className={`light-group-power-button ${status.state !== "all-off" ? "active" : ""}`} aria-label={`${group.name}总开关`} onClick={() => { const next = status.state === "all-off"; yard.setLightGroupOn(group.id, next); yard.notify(`${group.name}${next ? "开启" : "关闭"}指令已发送 · ${status.onlineCount}/${status.members.length} 台`); }}><Power size={25} weight="bold" /></button>
+          <button disabled={!yard.permissions.controlDevices} className={`light-group-power-button ${status.state !== "all-off" ? "active" : ""}`} aria-label={`${group.name}总开关`} onClick={() => { const next = status.state === "all-off"; yard.setLightGroupOn(group.id, next); yard.notify(`${group.name}${next ? "开启" : "关闭"}指令已发送 · ${status.onlineCount}/${status.members.length} 台`); }}><Power size={25} weight="bold" /></button>
         </section>
 
         <section className="content-section light-group-control-section">
           <div className="section-title"><span>统一亮度</span><strong>{status.brightness}%</strong></div>
-          <input aria-label="灯光组亮度" className="light-group-range" type="range" min="1" max="100" value={status.brightness || 1} onChange={(event) => yard.setLightGroupBrightness(group.id, Number(event.target.value))} />
+          <input disabled={!yard.permissions.controlDevices} aria-label="灯光组亮度" className="light-group-range" type="range" min="1" max="100" value={status.brightness || 1} onChange={(event) => yard.setLightGroupBrightness(group.id, Number(event.target.value))} />
           <div className="light-group-range-labels"><span>柔和</span><span>明亮</span></div>
         </section>
 
-        {supportsColor ? <section className="content-section light-group-control-section"><div className="section-title"><span>统一颜色</span><small>公共能力</small></div><div className="light-group-color-grid">{colors.map((color) => <button key={color.value} onClick={() => { yard.setLightGroupColor(group.id, color.value); yard.notify(`${group.name}颜色已调整为${color.name}`); }}><i style={{ background: color.color }} /><span>{color.name}</span></button>)}</div></section> : null}
+        {supportsColor ? <section className="content-section light-group-control-section"><div className="section-title"><span>统一颜色</span><small>公共能力</small></div><div className="light-group-color-grid">{colors.map((color) => <button disabled={!yard.permissions.controlDevices} key={color.value} onClick={() => { yard.setLightGroupColor(group.id, color.value); yard.notify(`${group.name}颜色已调整为${color.name}`); }}><i style={{ background: color.color }} /><span>{color.name}</span></button>)}</div></section> : null}
 
-        {supportsEffects ? <section className="content-section light-group-control-section"><div className="section-title"><span>同步效果</span><small>兼容设备同时播放</small></div><div className="preset-row light-group-effects">{["日落流光", "萤火微光", "节日律动", "静态暖白"].map((effect) => <button key={effect} className={status.effect === effect ? "selected" : ""} onClick={() => { yard.setLightGroupEffect(group.id, effect); yard.notify(`${group.name}已切换到${effect}`); }}>{effect}</button>)}</div></section> : <section className="capability-note"><ShieldCheck size={19} /><span><strong>已自动匹配公共能力</strong><small>部分成员不支持动态效果，因此仅显示开关、亮度与色温。</small></span></section>}
+        {supportsEffects ? <section className="content-section light-group-control-section"><div className="section-title"><span>同步效果</span><small>兼容设备同时播放</small></div><div className="preset-row light-group-effects">{["日落流光", "萤火微光", "节日律动", "静态暖白"].map((effect) => <button disabled={!yard.permissions.controlDevices} key={effect} className={status.effect === effect ? "selected" : ""} onClick={() => { yard.setLightGroupEffect(group.id, effect); yard.notify(`${group.name}已切换到${effect}`); }}>{effect}</button>)}</div></section> : <section className="capability-note"><ShieldCheck size={19} /><span><strong>已自动匹配公共能力</strong><small>部分成员不支持动态效果，因此仅显示开关、亮度与色温。</small></span></section>}
 
-        <section className="content-section light-group-members-section"><div className="section-title"><span>组内灯光</span><small>{status.onlineCount}/{status.members.length} 在线</small></div><div className="light-group-member-list">{status.members.map((member) => <div key={member.id}><span className="member-light-icon"><LightbulbFilament size={22} weight="duotone" /></span><span><strong>{member.name}</strong><small>{member.area} · {member.model} · {member.online ? `${member.brightness}%` : "离线"}</small></span><Switch disabled={!member.online} label={`${member.name}开关`} value={member.on} onChange={(value) => yard.setLightDeviceOn(member.id, value)} /></div>)}</div></section>
+        <section className="content-section light-group-members-section"><div className="section-title"><span>组内灯光</span><small>{status.onlineCount}/{status.members.length} 在线</small></div><div className="light-group-member-list">{status.members.map((member) => <div key={member.id}><span className="member-light-icon"><LightbulbFilament size={22} weight="duotone" /></span><span><strong>{member.name}</strong><small>{member.area} · {member.model} · {member.online ? `${member.brightness}%` : "离线"}</small></span><Switch disabled={!member.online || !yard.permissions.controlDevices} label={`${member.name}开关`} value={member.on} onChange={(value) => yard.setLightDeviceOn(member.id, value)} /></div>)}</div></section>
 
-        <div className="light-group-detail-actions"><button className="secondary-button" onClick={() => flow.push(sceneEditorScreen())}><Sparkle size={18} />用于新场景</button>{yard.permissions.manageYard ? <button className="primary-button" data-testid="edit-light-group" onClick={() => flow.push(lightGroupEditorScreen(group.id))}><Gear size={18} />编辑灯光组</button> : null}</div>
+        <div className="light-group-detail-actions">{yard.permissions.editScenes ? <button className="secondary-button" onClick={() => flow.push(sceneEditorScreen())}><Sparkle size={18} />用于新场景</button> : null}{yard.permissions.manageYard ? <button className="primary-button" data-testid="edit-light-group" onClick={() => flow.push(lightGroupEditorScreen(group.id))}><Gear size={18} />编辑灯光组</button> : null}</div>
       </main>
     </MobileScroll>
   );
@@ -1590,7 +1695,7 @@ function LightDeviceSettingsPage({ deviceId, flow }: { deviceId: string; flow: F
           </div>
         </section>
 
-        <section className="capability-note"><ShieldCheck size={19} /><span><strong>{canEdit ? "仅调整应用中的设备归属" : "当前账户只有查看权限"}</strong><small>{canEdit ? "设备离线时也可以修改，不会发送硬件控制指令。" : "庭院业主或具有设备管理权限的安装商可以修改。"}</small></span></section>
+        <section className="capability-note"><ShieldCheck size={19} /><span><strong>{canEdit ? "仅调整应用中的设备归属" : "当前账户只有查看权限"}</strong><small>{canEdit ? "设备离线时也可以修改，不会发送硬件控制指令。" : "庭院拥有者或用户可以修改；账户是否为安装商不影响权限。"}</small></span></section>
         {error ? <p className="form-error" role="alert">{error}</p> : null}
         <button className="primary-button" data-testid="save-light-device-area" disabled={!canEdit || area === light.area} onClick={save}>保存设置</button>
       </main>
@@ -1603,7 +1708,7 @@ function LightMemberDetail({ deviceId }: { deviceId: string }) {
   const light = allLightingDevices(yard.activeYard).find((item) => item.id === deviceId);
   if (!light) return <MobileScroll className="app-screen dark-screen"><main className="detail-page"><div className="empty-state-card"><strong>设备不存在</strong></div></main></MobileScroll>;
   const groups = yard.activeYard.lightGroups.filter((group) => group.memberIds.includes(light.id));
-  return <MobileScroll className="app-screen dark-screen"><main className="detail-page light-member-detail-page"><section className="light-group-hero"><span className="light-group-hero-icon"><LightbulbFilament size={42} weight="duotone" /></span><div><small>{light.model} · {light.area}</small><h1>{light.name}</h1><p><i className={light.online ? "on" : ""} />{light.online ? "在线" : "离线"} · 亮度 {light.brightness}%</p></div><Switch disabled={!light.online} label={`${light.name}开关`} value={light.on} onChange={(value) => yard.setLightDeviceOn(light.id, value)} /></section><section className="content-section"><div className="section-title"><span>灯光组归属</span></div><div className="capability-chip-row">{groups.length ? groups.map((group) => <span key={group.id}><LightbulbFilament size={13} />{group.name}</span>) : <p>当前未加入任何灯光组</p>}</div></section><section className="capability-note"><ShieldCheck size={19} /><span><strong>组控不会取消独立控制</strong><small>你仍然可以单独开关该灯，灯光组会显示为“部分开启”。</small></span></section></main></MobileScroll>;
+  return <MobileScroll className="app-screen dark-screen"><main className="detail-page light-member-detail-page"><section className="light-group-hero"><span className="light-group-hero-icon"><LightbulbFilament size={42} weight="duotone" /></span><div><small>{light.model} · {light.area}</small><h1>{light.name}</h1><p><i className={light.online ? "on" : ""} />{light.online ? "在线" : "离线"} · 亮度 {light.brightness}%</p></div><Switch disabled={!light.online || !yard.permissions.controlDevices} label={`${light.name}开关`} value={light.on} onChange={(value) => yard.setLightDeviceOn(light.id, value)} /></section><section className="content-section"><div className="section-title"><span>灯光组归属</span></div><div className="capability-chip-row">{groups.length ? groups.map((group) => <span key={group.id}><LightbulbFilament size={13} />{group.name}</span>) : <p>当前未加入任何灯光组</p>}</div></section><section className="capability-note"><ShieldCheck size={19} /><span><strong>组控不会取消独立控制</strong><small>{yard.permissions.controlDevices ? "你仍然可以单独开关该灯，灯光组会显示为“部分开启”。" : "访客可查看组控状态，但不能操作设备。"}</small></span></section></main></MobileScroll>;
 }
 
 function lightGroupEditorScreen(groupId?: string): FlowScreen {
@@ -1875,7 +1980,7 @@ function NightJoinYardView(props: JoinYardViewProps) {
   return (
     <MobileScroll className="app-screen dark-screen">
       <main className="detail-page yard-create-page night-yard-create-page join-yard-page">
-        <div className="yard-create-intro"><small>连接一个已有庭院</small><h1>输入邀请码</h1><p>向庭院所有者索取邀请码，确认后即可加入。</p></div>
+        <div className="yard-create-intro"><small>连接一个已有庭院</small><h1>输入邀请码</h1><p>向庭院拥有者索取邀请码，确认后即可加入。</p></div>
         <div className="mobile-field"><label className="field-label" htmlFor="join-yard-code">邀请码</label><KeyboardInput id="join-yard-code" data-testid="join-yard-code" value={props.code} placeholder="例如：GARDEN-NEW" enterKeyHint="done" onChange={(event) => props.onCodeChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") props.onLookup(); }} /></div>
         <div className="join-yard-actions"><button className="primary-button" data-testid="lookup-invite" onClick={props.onLookup}>查看邀请</button><button className="secondary-button" onClick={props.onScan}><QrCode size={18} />扫描二维码</button></div>
         {props.error ? <p className="form-error" role="alert">{props.error}</p> : null}
@@ -1935,6 +2040,7 @@ function YardManagementPage({ flow }: { flow: FlowControls }) {
   const yard = useYard();
   const visualMode = useVisualMode();
   const canManage = yard.permissions.manageYard;
+  const canManageMembers = yard.permissions.manageMembers;
   const [tab, setTab] = useState<"profile" | "areas" | "members">("areas");
   const logicalDevices = yardLogicalDevices(yard.activeYard);
   const assignedDevices = logicalDevices.filter((device) => device.area !== "未分区" && device.area !== "跨区域");
@@ -1948,7 +2054,7 @@ function YardManagementPage({ flow }: { flow: FlowControls }) {
         {tab === "profile" ? <section className="yard-management-tab-panel" role="tabpanel">
           <div className="yard-management-profile-card"><span><House size={24} weight="duotone" /></span><div><small>庭院名称</small><strong>{yard.activeYard.profile.name}</strong><p>{yard.activeYard.profile.city} · {yard.activeYard.profile.timezone}</p></div></div>
           <div className="settings-list yard-management-inline-list"><button onClick={() => flow.push(yardProfileScreen())}><Globe size={21} /><span>庭院资料</span><strong>{canManage ? "编辑" : "查看"}</strong></button></div>
-          {!canManage ? <button className="secondary-button" onClick={() => yard.notify("已提交退出庭院请求")}>退出庭院</button> : null}
+          {yard.activeYard.membership.role !== "owner" ? <button className="secondary-button" onClick={() => yard.notify("已提交退出庭院请求")}>退出庭院</button> : null}
         </section> : null}
 
         {tab === "areas" ? <section className="yard-management-tab-panel yard-management-areas-panel" role="tabpanel">
@@ -1960,8 +2066,9 @@ function YardManagementPage({ flow }: { flow: FlowControls }) {
         </section> : null}
 
         {tab === "members" ? <section className="yard-management-tab-panel" role="tabpanel">
-          <div className="yard-member-list yard-management-member-list">{yard.activeYard.members.map((member) => <div key={member.id}><span><UserCircle size={22} /><strong>{member.name}</strong></span><small>{member.roleLabel}{member.role === "installer" && member.expiresAt ? ` · ${isMembershipExpired({ role: member.role, roleLabel: member.roleLabel, expiresAt: member.expiresAt, authorizedDeviceIds: member.authorizedDeviceIds }) ? "已过期" : `有效至 ${member.expiresAt.slice(0, 10)}`}` : ""}</small></div>)}</div>
-          {canManage ? <button className="secondary-button" onClick={() => flow.push(installerAuthorizationScreen())}><ShieldCheck size={18} />管理临时安装商权限</button> : null}
+          <div className="yard-role-overview compact"><div><strong>拥有者</strong><small>完整管理与转移庭院</small></div><div><strong>用户</strong><small>操作、创建与配置</small></div><div><strong>访客</strong><small>仅查看</small></div></div>
+          <div className="yard-member-list yard-management-member-list">{yard.activeYard.members.map((member) => <div key={member.id}><span><UserCircle size={22} /><strong>{member.name}</strong></span><small>{member.accountLabel} · {member.roleLabel}</small></div>)}</div>
+          <button className={canManageMembers ? "primary-button" : "secondary-button"} onClick={() => flow.push(membersScreen())}><Users size={18} />{canManageMembers ? "管理成员与权限" : "查看成员与权限"}</button>
         </section> : null}
       </main>
     </MobileScroll>
@@ -2003,7 +2110,7 @@ function LogicalDeviceAreaPage({ initialDevice, flow }: { initialDevice: Logical
   const current = yardLogicalDevices(yard.activeYard).find((device) => device.id === initialDevice.id);
   const [area, setArea] = useState(current?.area ?? "未分区");
   const [error, setError] = useState("");
-  const canManage = yard.permissions.manageYard || (yard.activeYard.membership.role === "installer" && yard.activeYard.membership.authorizedDeviceIds.includes(initialDevice.kind === "channel" ? `channel-${initialDevice.sourceId}` : initialDevice.sourceId));
+  const canManage = yard.permissions.manageYard;
   if (!current) return <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage"><div className="empty-state-card"><strong>设备不存在或已移除</strong></div></main></MobileScroll>;
   const choices = current.kind === "group" ? ["跨区域", ...yard.activeYard.areas] : ["未分区", ...yard.activeYard.areas];
   const save = () => {
@@ -2050,7 +2157,7 @@ function YardProfilePage({ flow }: { flow: FlowControls }) {
   return (
     <>
     <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage">
-      <div className="yard-subpage-intro"><small>当前庭院</small><h1>{yard.activeYard.profile.name}</h1><p>{canManage ? "名称、所在地和时区会影响整个庭院。" : "你拥有查看权限，修改由庭院所有者完成。"}</p></div>
+      <div className="yard-subpage-intro"><small>当前庭院</small><h1>{yard.activeYard.profile.name}</h1><p>{canManage ? "名称、所在地和时区会影响整个庭院。" : "你拥有查看权限，修改由庭院拥有者或用户完成。"}</p></div>
       <div className="mobile-field"><label className="field-label" htmlFor="yard-profile-name">庭院名称</label><KeyboardInput id="yard-profile-name" data-testid="yard-profile-name" value={name} disabled={!canManage} onChange={(event) => setName(event.target.value)} /></div>
       <button className="yard-create-select-row yard-profile-select-row" data-testid="yard-profile-location-trigger" disabled={!canManage} onClick={() => { keyboard.hide(); setPicker("location"); }}><MapPin size={19} /><span><small>所在地</small><strong>{city}</strong></span><CaretDown size={17} /></button>
       <button className="yard-create-select-row yard-profile-select-row" data-testid="yard-profile-timezone-trigger" disabled={!canManage} onClick={() => { keyboard.hide(); setPicker("timezone"); }}><Globe size={19} /><span><small>庭院时区</small><strong>{timezone}</strong></span><CaretDown size={17} /></button>
@@ -2084,49 +2191,77 @@ function AreaManagementPage({ flow }: { flow: FlowControls }) {
 }
 
 function membersScreen(): FlowScreen {
-  return detailScreen("yard-members", "家庭与成员", () => <MembersPage />);
+  return detailScreen("yard-members", "成员与权限", (flow) => <MembersPage flow={flow} />);
 }
 
-function MembersPage() {
+function MembersPage({ flow }: { flow: FlowControls }) {
   const yard = useYard();
-  return <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage"><div className="yard-subpage-intro"><small>庭院成员</small><h1>{yard.activeYard.members.length} 位成员</h1><p>每位成员的角色和可用权限都属于当前庭院。</p></div><div className="yard-member-list">{yard.activeYard.members.map((member) => <div key={member.id}><span><UserCircle size={22} /><strong>{member.name}</strong></span><small>{member.roleLabel}</small></div>)}</div></main></MobileScroll>;
-}
+  const keyboard = useKeyboard();
+  const canManage = yard.permissions.manageMembers;
+  const [sheet, setSheet] = useState<"add" | "manage" | "transfer" | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [newRole, setNewRole] = useState<Exclude<YardRole, "owner">>("user");
+  const [accountKind, setAccountKind] = useState<YardAccountKind>("household");
+  const [error, setError] = useState("");
+  const selectedMember = yard.activeYard.members.find((member) => member.id === selectedMemberId);
+  const transferTargets = yard.activeYard.members.filter((member) => member.id !== yard.activeYard.currentMemberId);
 
-function installerAuthorizationScreen(): FlowScreen {
-  return detailScreen("installer-authorization", "临时安装商权限", () => <InstallerAuthorizationPage />);
-}
-
-function InstallerAuthorizationPage() {
-  const yard = useYard();
-  const canManage = yard.permissions.manageYard;
-  const installers = yard.activeYard.members.filter((member) => member.role === "installer");
-  const installer = installers[0];
-  const authorized = installer?.authorizedDeviceIds ?? [];
-  const deviceScopes = [
-    { id: "controller", label: "DC12 控制器", detail: "控制器本体与连接状态" },
-    { id: "channel-1", label: "CH1 · 庭院门", detail: "开关与点动控制" },
-    { id: "channel-2", label: "CH2 · 水泵", detail: "开关与运行状态" },
-    { id: "channel-3", label: "CH3 · 喷泉", detail: "开关与运行状态" },
-    { id: "channel-4", label: "CH4 · 灌溉", detail: "开关与运行状态" },
-  ];
-  const [selectedDevices, setSelectedDevices] = useState<string[]>(authorized);
-  const [duration, setDuration] = useState("30 天");
-  const save = () => {
-    if (!installer) return;
-    const expiresAt = duration === "7 天" ? "2026-08-08T23:59:59+08:00" : duration === "90 天" ? "2026-10-31T23:59:59+08:00" : "2026-08-31T23:59:59+08:00";
-    yard.updateInstallerAuthorization(yard.activeYardId, installer.id, selectedDevices, expiresAt);
-    yard.notify("临时安装商授权已保存");
+  const closeSheet = () => {
+    keyboard.hide();
+    setSheet(null);
+    setError("");
   };
+
+  const addMember = () => {
+    keyboard.hide();
+    if (!name.trim()) return setError("请输入成员名称");
+    const id = yard.addYardMember(yard.activeYardId, name, newRole, accountKind);
+    if (!id) return setError("只有拥有者可以添加成员");
+    yard.notify(`${name.trim()}已添加为${yardRoleLabel(newRole)}`);
+    setName("");
+    closeSheet();
+  };
+
   return (
-    <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage installer-authorization-page">
-      <div className="yard-subpage-intro"><small>设备安装与诊断</small><h1>临时安装商权限</h1><p>{canManage ? "选择安装商可查看和操作的设备范围。" : "当前页面为只读，授权由庭院所有者管理。"}</p></div>
-      <div className="yard-member-list">{installer ? <div key={installer.id}><span><SlidersHorizontal size={22} /><strong>{installer.name}</strong></span><small>{installer.expiresAt ? <>有效至 <span>{installer.expiresAt.slice(0, 10)}</span></> : "无期限"}</small></div> : <div className="empty-state-card"><strong>暂无临时安装商</strong></div>}</div>
-      {installer ? <>
-        <section className="content-section flush-section installer-scope-section"><div className="section-title"><span>设备授权范围</span><small>{selectedDevices.length} 项已选择</small></div><div className="installer-scope-list">{deviceScopes.map((device) => <label key={device.id} className={selectedDevices.includes(device.id) ? "selected" : ""}><input type="checkbox" checked={selectedDevices.includes(device.id)} disabled={!canManage} onChange={() => setSelectedDevices((current) => current.includes(device.id) ? current.filter((id) => id !== device.id) : [...current, device.id])} /><span><strong>{device.label}</strong><small>{device.detail}</small></span><Check size={17} weight="bold" /></label>)}</div></section>
-        <section className="content-section flush-section installer-duration-section"><div className="section-title"><span>授权期限</span></div><div className="choice-grid three-col">{["7 天", "30 天", "90 天"].map((item) => <button key={item} className={duration === item ? "selected" : ""} disabled={!canManage} onClick={() => setDuration(item)}>{item}</button>)}</div></section>
-        {canManage ? <button className="primary-button" data-testid="save-installer-authorization" onClick={save}>保存授权</button> : <div className="permission-note"><ShieldCheck size={17} />只读访问</div>}
-      </> : null}
-    </main></MobileScroll>
+    <>
+      <MobileScroll className="app-screen dark-screen"><main className="detail-page yard-subpage yard-members-page" data-testid="yard-members-page">
+        <div className="yard-subpage-intro"><small>{yard.activeYard.profile.name}</small><h1>成员与权限</h1><p>安装商和屋主使用同一套角色。账户身份只用于说明成员来源，不影响权限。</p></div>
+
+        <section className="yard-role-overview" aria-label="庭院角色说明">
+          <div className={yard.activeYard.membership.role === "owner" ? "current" : ""}><span><ShieldCheck size={21} /></span><strong>拥有者</strong><small>操作和创建全部内容；管理成员；转移庭院。庭院始终只有一位拥有者。</small></div>
+          <div className={yard.activeYard.membership.role === "user" ? "current" : ""}><span><UserCircle size={21} /></span><strong>用户</strong><small>操作设备，并可创建设备、场景、自动化、区域及相关配置。</small></div>
+          <div className={yard.activeYard.membership.role === "guest" ? "current" : ""}><span><User size={21} /></span><strong>访客</strong><small>仅查看设备状态、场景、自动化与庭院资料，不能执行或修改。</small></div>
+        </section>
+
+        <div className="section-title yard-member-section-title"><span>庭院成员</span><small>{yard.activeYard.members.length} 人</small></div>
+        <div className="yard-member-list yard-permission-member-list">{yard.activeYard.members.map((member) => {
+          const isCurrent = member.id === yard.activeYard.currentMemberId;
+          const editable = canManage && member.role !== "owner" && !isCurrent;
+          return <button key={member.id} data-testid={`yard-member-${member.id}`} disabled={!editable} onClick={() => { setSelectedMemberId(member.id); setNewRole(member.role === "owner" ? "user" : member.role); setSheet("manage"); }}><span><UserCircle size={22} /><span><strong>{member.name}{isCurrent ? "（当前账号）" : ""}</strong><small>{member.accountLabel}</small></span></span><span className={`yard-role-badge role-${member.role}`}>{member.roleLabel}</span>{editable ? <CaretRight size={16} /> : null}</button>;
+        })}</div>
+
+        {canManage ? <div className="yard-member-actions"><button className="primary-button" data-testid="add-yard-member" onClick={() => { setName(""); setNewRole("user"); setAccountKind("household"); setSheet("add"); }}><Plus size={18} />添加成员</button><button className="secondary-button" data-testid="transfer-yard" onClick={() => { setSelectedMemberId(null); setSheet("transfer"); }}><ShareNetwork size={18} />转移庭院</button></div> : <div className="permission-note"><ShieldCheck size={17} />只有拥有者可以添加、删除成员或转移庭院</div>}
+      </main></MobileScroll>
+
+      <BottomSheet open={sheet === "add"} onOpenChange={(open) => !open && closeSheet()} title="添加庭院成员" description="选择用户或访客；安装商不再是权限角色。" snap={0.66}>
+        <div className="mobile-field"><label className="field-label" htmlFor="new-yard-member-name">成员名称</label><KeyboardInput id="new-yard-member-name" data-testid="new-yard-member-name" value={name} placeholder="姓名或服务团队名称" onChange={(event) => { setName(event.target.value); setError(""); }} /></div>
+        <div className="member-choice-section"><strong>账户身份</strong><div className="choice-grid two-col"><button className={accountKind === "household" ? "selected" : ""} onClick={() => setAccountKind("household")}>家庭账号</button><button className={accountKind === "installer" ? "selected" : ""} onClick={() => setAccountKind("installer")}>安装商账号</button></div></div>
+        <div className="member-choice-section"><strong>庭院角色</strong><div className="member-role-choices"><button className={newRole === "user" ? "selected" : ""} onClick={() => setNewRole("user")}><strong>用户</strong><small>可操作和创建</small></button><button className={newRole === "guest" ? "selected" : ""} onClick={() => setNewRole("guest")}><strong>访客</strong><small>仅可查看</small></button></div></div>
+        {error ? <p className="form-error" role="alert">{error}</p> : null}
+        <button className="primary-button" data-testid="confirm-add-yard-member" onClick={addMember}>确认添加</button>
+      </BottomSheet>
+
+      <BottomSheet open={sheet === "manage"} onOpenChange={(open) => !open && closeSheet()} title={selectedMember?.name ?? "成员权限"} description={`${selectedMember?.accountLabel ?? "成员"}的庭院角色`} snap={0.54}>
+        {selectedMember ? <><div className="member-role-choices"><button className={newRole === "user" ? "selected" : ""} onClick={() => setNewRole("user")}><strong>用户</strong><small>可操作和创建</small></button><button className={newRole === "guest" ? "selected" : ""} onClick={() => setNewRole("guest")}><strong>访客</strong><small>仅可查看</small></button></div><button className="primary-button" data-testid="save-yard-member-role" onClick={() => { if (yard.updateYardMemberRole(yard.activeYardId, selectedMember.id, newRole)) { yard.notify(`${selectedMember.name}已设为${yardRoleLabel(newRole)}`); closeSheet(); } }}>保存角色</button><button className="secondary-button destructive-copy" data-testid="remove-yard-member" onClick={() => { if (yard.removeYardMember(yard.activeYardId, selectedMember.id)) { yard.notify(`${selectedMember.name}已从庭院移除`); closeSheet(); } }}>移除成员</button></> : null}
+      </BottomSheet>
+
+      <BottomSheet open={sheet === "transfer"} onOpenChange={(open) => !open && closeSheet()} title="转移庭院" description="目标成员将成为新的唯一拥有者；你会自动降级为访客。" snap={0.66}>
+        <div className="transfer-warning"><ShieldCheck size={22} /><span><strong>转移后立即生效</strong><small>新拥有者可继续转给屋主或安装商。原拥有者不再能操作、创建或管理成员。</small></span></div>
+        <div className="transfer-target-list">{transferTargets.map((member) => <button key={member.id} className={selectedMemberId === member.id ? "selected" : ""} onClick={() => setSelectedMemberId(member.id)}><span><UserCircle size={21} /><span><strong>{member.name}</strong><small>{member.accountLabel} · 当前为{member.roleLabel}</small></span></span>{selectedMemberId === member.id ? <Check size={17} weight="bold" /> : <CaretRight size={16} />}</button>)}</div>
+        <button className="primary-button" data-testid="confirm-transfer-yard" disabled={!selectedMemberId} onClick={() => { const target = yard.activeYard.members.find((member) => member.id === selectedMemberId); if (target && yard.transferYardOwnership(yard.activeYardId, target.id)) { yard.notify(`庭院已转移给${target.name}，你现在是访客`); closeSheet(); flow.pop(); } }}>确认转移</button>
+      </BottomSheet>
+    </>
   );
 }
 
@@ -2308,7 +2443,7 @@ function LightDetail() {
             <strong>{yard.lightEffect}</strong>
             <small>{yard.activeYard.light.area} · 智能灯带</small>
           </div>
-          <Switch label="灯带电源" value={yard.lightOn} onChange={yard.setLightOn} />
+          <Switch disabled={!yard.permissions.controlDevices} label="灯带电源" value={yard.lightOn} onChange={yard.setLightOn} />
         </section>
 
         <section className="control-panel">
@@ -2320,6 +2455,7 @@ function LightDetail() {
             min="1"
             max="100"
             value={yard.brightness}
+            disabled={!yard.permissions.controlDevices}
             onChange={(event) => yard.setBrightness(Number(event.target.value))}
           />
         </section>
@@ -2338,6 +2474,7 @@ function LightDetail() {
             <div className="effect-grid">
               {effects.map((effect, index) => (
                 <button
+                  disabled={!yard.permissions.controlDevices}
                   key={effect}
                   className={`effect-card effect-${index} ${yard.lightEffect === effect ? "selected" : ""}`}
                   onClick={() => {
@@ -2353,15 +2490,15 @@ function LightDetail() {
                 </button>
               ))}
             </div>
-            <div className="speed-row"><span>速度</span><button>舒缓</button><button className="selected">适中</button><button>活跃</button></div>
+            <div className="speed-row"><span>速度</span><button disabled={!yard.permissions.controlDevices}>舒缓</button><button disabled={!yard.permissions.controlDevices} className="selected">适中</button><button disabled={!yard.permissions.controlDevices}>活跃</button></div>
           </section>
         ) : null}
         {mode === "DIY" ? <DiyControls /> : null}
 
         <section className="quick-links">
-          <button><Timer size={20} /><span>临时定时<small>关闭倒计时</small></span></button>
-          <button><SunHorizon size={20} /><span>加入场景<small>跨设备执行</small></span></button>
-          <button><FlowArrow size={20} /><span>创建联动<small>设备触发规则</small></span></button>
+          <button disabled={!yard.permissions.editAutomations}><Timer size={20} /><span>临时定时<small>关闭倒计时</small></span></button>
+          <button disabled={!yard.permissions.editScenes}><SunHorizon size={20} /><span>加入场景<small>跨设备执行</small></span></button>
+          <button disabled={!yard.permissions.editAutomations}><FlowArrow size={20} /><span>创建联动<small>设备触发规则</small></span></button>
         </section>
       </main>
     </MobileScroll>
@@ -2369,12 +2506,13 @@ function LightDetail() {
 }
 
 function WhiteControls() {
+  const yard = useYard();
   const [temperature, setTemperature] = useState(48);
   return (
     <section className="content-section control-panel">
       <div className="section-title"><span>色温</span><strong>{Math.round(2200 + temperature * 43)} K</strong></div>
-      <input className="range-control warm" aria-label="色温" type="range" min="0" max="100" value={temperature} onChange={(e) => setTemperature(Number(e.target.value))} />
-      <div className="preset-row"><button>烛光</button><button className="selected">暖白</button><button>自然光</button><button>冷白</button></div>
+      <input disabled={!yard.permissions.controlDevices} className="range-control warm" aria-label="色温" type="range" min="0" max="100" value={temperature} onChange={(e) => setTemperature(Number(e.target.value))} />
+      <div className="preset-row"><button disabled={!yard.permissions.controlDevices}>烛光</button><button disabled={!yard.permissions.controlDevices} className="selected">暖白</button><button disabled={!yard.permissions.controlDevices}>自然光</button><button disabled={!yard.permissions.controlDevices}>冷白</button></div>
     </section>
   );
 }
@@ -2387,9 +2525,9 @@ function ColorControls() {
     <section className="content-section">
       <div className="section-title"><span>常用颜色</span><button><Plus size={16} />收藏</button></div>
       <div className="color-row">
-        {colors.map((item) => <button key={item} aria-label={`选择颜色 ${item}`} className={color === item ? "selected" : ""} style={{ backgroundColor: item }} onClick={() => { setColor(item); yard.notify("灯带颜色已更新"); }} />)}
+        {colors.map((item) => <button disabled={!yard.permissions.controlDevices} key={item} aria-label={`选择颜色 ${item}`} className={color === item ? "selected" : ""} style={{ backgroundColor: item }} onClick={() => { setColor(item); yard.notify("灯带颜色已更新"); }} />)}
       </div>
-      <div className="control-panel"><div className="panel-heading"><span>饱和度</span><strong>82%</strong></div><input className="range-control" type="range" aria-label="饱和度" defaultValue="82" /></div>
+      <div className="control-panel"><div className="panel-heading"><span>饱和度</span><strong>82%</strong></div><input disabled={!yard.permissions.controlDevices} className="range-control" type="range" aria-label="饱和度" defaultValue="82" /></div>
     </section>
   );
 }
@@ -2398,15 +2536,15 @@ function DiyControls() {
   const yard = useYard();
   return (
     <section className="content-section">
-      <div className="section-title"><span>我的 DIY</span><button><Plus size={16} />新建</button></div>
-      <button className="diy-card" onClick={() => yard.notify("DIY 编辑器已准备")}> 
+      <div className="section-title"><span>我的 DIY</span><button disabled={!yard.permissions.controlDevices}><Plus size={16} />新建</button></div>
+      <button disabled={!yard.permissions.controlDevices} className="diy-card" onClick={() => yard.notify("DIY 编辑器已准备")}>
         <span><MagicWand size={26} weight="duotone" /></span>
         <strong>沿墙流动</strong><small>琥珀 → 珊瑚 · 向右 · 循环</small>
       </button>
       <div className="settings-list">
-        <button><Palette size={20} /><span>颜色与分段</span><strong>4 色</strong></button>
-        <button><FlowArrow size={20} /><span>运动方式</span><strong>流动</strong></button>
-        <button><SlidersHorizontal size={20} /><span>速度与方向</span><strong>适中 · 向右</strong></button>
+        <button disabled={!yard.permissions.controlDevices}><Palette size={20} /><span>颜色与分段</span><strong>4 色</strong></button>
+        <button disabled={!yard.permissions.controlDevices}><FlowArrow size={20} /><span>运动方式</span><strong>流动</strong></button>
+        <button disabled={!yard.permissions.controlDevices}><SlidersHorizontal size={20} /><span>速度与方向</span><strong>适中 · 向右</strong></button>
       </div>
     </section>
   );
@@ -2424,13 +2562,13 @@ function FountainDetail({ flow }: { flow: FlowControls }) {
           <small>后院 · Wi-Fi 在线</small>
           <strong>{yard.fountainOn ? "运行中" : "已关闭"}</strong>
           <p>{yard.fountainOn ? "已运行 18 分钟" : "上次运行：今天 19:30"}</p>
-          <button className={yard.fountainOn ? "danger-button" : "primary-button"} onClick={() => { yard.setFountainOn(!yard.fountainOn); yard.notify(yard.fountainOn ? "后院喷泉已关闭" : `后院喷泉已启动 · ${duration}`); }}>
+          <button disabled={!yard.permissions.controlDevices} className={yard.fountainOn ? "danger-button" : "primary-button"} onClick={() => { yard.setFountainOn(!yard.fountainOn); yard.notify(yard.fountainOn ? "后院喷泉已关闭" : `后院喷泉已启动 · ${duration}`); }}>
             {yard.fountainOn ? <><Stop size={19} />停止喷泉</> : <><Play size={19} />启动喷泉</>}
           </button>
         </section>
         <section className="content-section">
           <div className="section-title"><span>运行方式</span><small>不强制选择时长</small></div>
-          <div className="choice-grid two-col">{["持续运行", "30 分钟", "60 分钟", "自定义"].map((item) => <button className={duration === item ? "selected" : ""} onClick={() => setDuration(item)} key={item}>{item}</button>)}</div>
+          <div className="choice-grid two-col">{["持续运行", "30 分钟", "60 分钟", "自定义"].map((item) => <button disabled={!yard.permissions.controlDevices} className={duration === item ? "selected" : ""} onClick={() => setDuration(item)} key={item}>{item}</button>)}</div>
         </section>
         <section className="content-section">
           <div className="section-title"><span>下一计划</span><button>查看全部</button></div>
@@ -2456,7 +2594,7 @@ function GateDetail({ flow }: { flow: FlowControls }) {
             <small>前院 · Wi-Fi 在线</small>
             <strong>{yard.gateOpen ? "已打开" : "已关闭"}</strong>
             <p>状态反馈正常 · 最后更新刚刚</p>
-            <button className="primary-button" data-testid="gate-detail-action" onClick={() => setConfirm(true)}><Lock size={19} />{yard.gateOpen ? "关闭庭院门" : "打开庭院门"}</button>
+            <button disabled={!yard.permissions.controlDevices} className="primary-button" data-testid="gate-detail-action" onClick={() => setConfirm(true)}><Lock size={19} />{yard.gateOpen ? "关闭庭院门" : "打开庭院门"}</button>
           </section>
           <section className="content-section security-note"><ShieldCheck size={25} weight="duotone" /><span><strong>敏感设备保护已开启</strong><small>每次远程操作前均需确认，所有操作会记录。</small></span></section>
           <ChannelAssociation channel={1} flow={flow} />
@@ -2465,7 +2603,7 @@ function GateDetail({ flow }: { flow: FlowControls }) {
         </main>
       </MobileScroll>
       <BottomSheet open={confirm} onOpenChange={setConfirm} title={yard.gateOpen ? "确认关闭庭院门" : "确认打开庭院门"} description="请先确认门口环境安全。" snap={0.4}>
-        <button className="primary-button" onClick={() => { yard.setGateOpen(!yard.gateOpen); setConfirm(false); yard.notify("庭院门指令已发送"); }}>长按确认</button>
+        <button disabled={!yard.permissions.controlDevices} className="primary-button" onClick={() => { yard.setGateOpen(!yard.gateOpen); setConfirm(false); yard.notify("庭院门指令已发送"); }}>长按确认</button>
         <button className="secondary-button" onClick={() => setConfirm(false)}>取消</button>
       </BottomSheet>
     </>
@@ -2484,13 +2622,13 @@ function IrrigationDetail({ flow }: { flow: FlowControls }) {
           <small>前院 · Wi-Fi 在线</small>
           <strong>{yard.irrigationOn ? "灌溉中" : "空闲"}</strong>
           <p>{yard.irrigationOn ? `${yard.irrigationMode} · 已运行 06:24` : "下一计划：明日 06:30"}</p>
-          <button className={yard.irrigationOn ? "danger-button" : "primary-button"} onClick={() => { yard.setIrrigationOn(!yard.irrigationOn); yard.notify(yard.irrigationOn ? "前院灌溉已停止" : `前院灌溉已启动 · ${yard.irrigationMode}`); }}>
+          <button disabled={!yard.permissions.controlDevices} className={yard.irrigationOn ? "danger-button" : "primary-button"} onClick={() => { yard.setIrrigationOn(!yard.irrigationOn); yard.notify(yard.irrigationOn ? "前院灌溉已停止" : `前院灌溉已启动 · ${yard.irrigationMode}`); }}>
             {yard.irrigationOn ? <><Stop size={19} />停止灌溉</> : <><Play size={19} />启动灌溉</>}
           </button>
         </section>
         <section className="content-section">
           <div className="section-title"><span>本次运行</span><small>可不设置时长</small></div>
-          <div className="choice-grid two-col">{options.map((item) => <button className={yard.irrigationMode === item ? "selected" : ""} onClick={() => yard.setIrrigationMode(item)} key={item}>{item}</button>)}</div>
+          <div className="choice-grid two-col">{options.map((item) => <button disabled={!yard.permissions.controlDevices} className={yard.irrigationMode === item ? "selected" : ""} onClick={() => yard.setIrrigationMode(item)} key={item}>{item}</button>)}</div>
           {yard.irrigationMode === "持续运行" ? <p className="inline-warning">将持续运行，直到手动停止；运行 60 分钟后提醒。</p> : null}
         </section>
         <section className="content-section"><div className="section-title"><span>今日运行</span><strong>24 分钟</strong></div><div className="progress-track"><span style={{ width: "38%" }} /></div><p className="muted-copy">今日计划 60 分钟 · 已完成 40%</p></section>
@@ -2537,7 +2675,7 @@ function GenericChannelDetail({ channelId, flow }: { channelId: number; flow: Fl
             <small>{channel.area} · DC12 CH{channel.id} · Wi-Fi 在线</small>
             <strong>{lastCommand === "none" ? "待机" : lastCommand === "pulse" ? "触发指令已发送" : lastCommand === "on" ? "开启指令已发送" : "关闭指令已发送"}</strong>
             <p>{isPulse ? `点动/脉冲 ${channel.pulse} · 不推断设备最终状态` : "控制器未提供反馈输入，仅显示最后指令"}</p>
-            <button className={active && !isPulse ? "danger-button" : "primary-button"} onClick={requestExecute}>
+            <button disabled={!yard.permissions.controlDevices} className={active && !isPulse ? "danger-button" : "primary-button"} onClick={requestExecute}>
               {channel.sensitive ? <Lock size={19} /> : <Power size={19} />}
               {isPulse ? `触发${channel.name}` : active ? `关闭${channel.name}` : `开启${channel.name}`}
             </button>
@@ -2567,9 +2705,10 @@ function GenericChannelDetail({ channelId, flow }: { channelId: number; flow: Fl
 }
 
 function ChannelAssociation({ channel, flow }: { channel: number; flow: FlowControls }) {
+  const yard = useYard();
   return (
     <section className="content-section channel-association">
-      <div className="section-title"><span>控制器通道</span><button onClick={() => flow.push(channelEditorScreen(channel))}>编辑</button></div>
+      <div className="section-title"><span>控制器通道</span>{yard.permissions.configureController ? <button onClick={() => flow.push(channelEditorScreen(channel))}>编辑</button> : <small>仅查看</small>}</div>
       <button className="association-row" onClick={() => flow.push(controllerDetailScreen())}>
         <SlidersHorizontal size={23} weight="duotone" />
         <span><strong>12 路干接点控制器</strong><small>DC12 · CH{channel} · Wi-Fi 在线</small></span>
@@ -2912,7 +3051,7 @@ function LinkageEditor({ flow, existingName }: { flow: FlowControls; existingNam
     { id: "light", name: yard.activeYard.light.name, icon: <LightbulbFilament size={23} />, events: ["开启", "关闭", "离线"], actions: ["暖白 60% · 5 分钟后关闭", "开启 · 日落流光 68%", "关闭"] },
     { id: "fountain", name: fountainName, icon: <Waves size={23} />, events: ["开启", "关闭", "持续运行 30 分钟"], actions: ["开启 · 持续运行", "运行 30 分钟", "关闭"] },
     { id: "irrigation", name: irrigationName, icon: <Plant size={23} />, events: ["开始运行", "停止", "运行结束"], actions: ["持续运行", "运行 15 分钟", "停止"] },
-    { id: "pump", name: "水泵", icon: <Drop size={23} />, events: ["开启", "关闭", "持续运行 60 分钟"], actions: ["关闭并通知所有者", "开启", "运行 30 分钟"] },
+    { id: "pump", name: "水泵", icon: <Drop size={23} />, events: ["开启", "关闭", "持续运行 60 分钟"], actions: ["关闭并通知拥有者", "开启", "运行 30 分钟"] },
   ];
   const conditionOptions = ["日落至 23:00", "日出至日落", "18:00 至 23:00", "仅工作日"];
   const triggerDevice = sheet?.kind.startsWith("trigger") ? devices.find((device) => device.id === triggers[sheet.index]?.deviceId) : null;
@@ -3024,7 +3163,7 @@ function DeviceManagementPage({ flow }: { flow: FlowControls }) {
         </section>
 
         <section className="physical-device-section management-device-section">
-          <div className="section-title management-section-heading"><span>物理设备</span><button onClick={() => flow.push(addDeviceScreen())}><Plus size={15} />添加</button></div>
+          <div className="section-title management-section-heading"><span>物理设备</span>{yard.permissions.addDevices ? <button onClick={() => flow.push(addDeviceScreen())}><Plus size={15} />添加</button> : <small>仅查看</small>}</div>
           <div className="physical-device-list">
             {lights.map((light) => <button className="management-device-card" data-testid={`managed-light-${light.id}`} key={light.id} onClick={() => flow.push(lightDeviceDetailScreen(light.id))}>
               <span className="physical-device-icon"><LightbulbFilament size={28} weight="duotone" /></span>
@@ -3091,7 +3230,7 @@ function ControllerDetailPage({ flow, onboarding }: { flow: FlowControls; onboar
           <div className="section-title"><span>通道配置</span><small>CH1–CH12</small></div>
           <div className="channel-list">
             {yard.controllerChannels.map((channel) => (
-              <button key={channel.id} className={channel.configured ? "configured" : ""} data-testid={`channel-${channel.id}`} onClick={() => flow.push(channelEditorScreen(channel.id))}>
+              <button disabled={!yard.permissions.configureController} key={channel.id} className={channel.configured ? "configured" : ""} data-testid={`channel-${channel.id}`} onClick={() => flow.push(channelEditorScreen(channel.id))}>
                 <span className="channel-number">CH{channel.id}</span>
                 <span className="channel-device-icon">{channelIcon(channel.type)}</span>
                 <span className="channel-copy">
@@ -3107,8 +3246,8 @@ function ControllerDetailPage({ flow, onboarding }: { flow: FlowControls; onboar
         <section className="content-section controller-settings">
           <div className="section-title"><span>控制器设置</span></div>
           <div className="settings-list">
-            <button><WifiHigh size={20} /><span>网络设置</span><strong>庭院 Wi-Fi</strong></button>
-            <button><ShieldCheck size={20} /><span>通道安全保护</span><strong>已开启</strong></button>
+            <button disabled={!yard.permissions.configureController}><WifiHigh size={20} /><span>网络设置</span><strong>庭院 Wi-Fi</strong></button>
+            <button disabled={!yard.permissions.configureController}><ShieldCheck size={20} /><span>通道安全保护</span><strong>已开启</strong></button>
             <button><Gear size={20} /><span>固件与设备信息</span><strong>v1.0.8</strong></button>
           </div>
         </section>
@@ -3239,14 +3378,13 @@ function channelIcon(type: string, size = 23): ReactNode {
 function MeHome({ flow }: { flow: FlowControls }) {
   const yard = useYard();
   const configuredCount = yard.controllerChannels.filter((channel) => channel.configured).length + allLightingDevices(yard.activeYard).length;
-  const installerCount = yard.activeYard.members.filter((member) => member.role === "installer").length;
   const visualMode = useVisualMode();
-  const roleLabel = yard.activeYard.membership.role === "owner" ? "庭院所有者" : yard.activeYard.membership.roleLabel;
+  const roleLabel = yard.activeYard.membership.role === "owner" ? "庭院拥有者" : yard.activeYard.membership.roleLabel;
   return (
     <MobileScroll className="app-screen dark-screen"><main className="root-page standard-page">
       <AppTopBar title="我的" subtitle="家庭、权限与系统设置" />
-      <section className={`profile-card ${visualMode === "warm" ? "warm-profile-card" : ""}`}><span><UserCircle size={42} weight="duotone" /></span><div><strong>{roleLabel}</strong><small>{yard.activeYard.profile.name} · {yard.activeYard.membership.roleLabel}</small></div><CaretDown size={18} /></section>
-      <section className="content-section flush-section"><div className="settings-list"><button data-testid="open-device-management" onClick={() => flow.push(deviceManagementScreen())}><SlidersHorizontal size={21} /><span>设备管理</span><strong>{configuredCount} 台</strong></button><button onClick={() => flow.push(membersScreen())}><Users size={21} /><span>家庭与成员</span><strong>{yard.activeYard.members.length} 人</strong></button>{yard.permissions.manageYard ? <button onClick={() => flow.push(installerAuthorizationScreen())}><ShareNetwork size={21} /><span>临时安装商权限</span><strong>{installerCount} 个有效</strong></button> : null}<button><Bell size={21} /><span>消息与通知</span><strong>2 条</strong></button><button><ListChecks size={21} /><span>全局操作日志</span><strong>查看</strong></button></div></section>
+      <section className={`profile-card ${visualMode === "warm" ? "warm-profile-card" : ""}`}><span><UserCircle size={42} weight="duotone" /></span><div><strong>{roleLabel}</strong><small>{yard.activeYard.profile.name} · {yard.activeYard.membership.accountLabel}</small></div><CaretDown size={18} /></section>
+      <section className="content-section flush-section"><div className="settings-list"><button data-testid="open-device-management" onClick={() => flow.push(deviceManagementScreen())}><SlidersHorizontal size={21} /><span>{yard.permissions.addDevices ? "设备管理" : "设备查看"}</span><strong>{configuredCount} 台</strong></button><button onClick={() => flow.push(membersScreen())}><Users size={21} /><span>成员与权限</span><strong>{yard.permissions.manageMembers ? "管理" : `${yard.activeYard.members.length} 人`}</strong></button><button><Bell size={21} /><span>消息与通知</span><strong>2 条</strong></button><button><ListChecks size={21} /><span>全局操作日志</span><strong>查看</strong></button></div></section>
       <section className="content-section flush-section"><div className="settings-list"><button><Globe size={21} /><span>语言与地区</span><strong>简体中文</strong></button><button onClick={() => flow.push(yardProfileScreen())}><MapPin size={21} /><span>庭院时区</span><strong>{yard.activeYard.profile.timezone}</strong></button><button><Bluetooth size={21} /><span>蓝牙与本地控制</span><strong>可用</strong></button><button><Gear size={21} /><span>应用设置</span><strong> </strong></button></div></section>
     </main></MobileScroll>
   );

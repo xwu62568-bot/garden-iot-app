@@ -23,7 +23,7 @@ for (const visual of ["night", "warm"] as const) {
     await page.getByRole("button", { name: "切换庭院" }).first().click();
     await expect(page.getByTestId(`${visual}-yard-switcher`)).toBeVisible();
     await expect(page.getByText("父母家", { exact: true })).toBeVisible();
-    await expect(page.getByText(/普通成员/).first()).toBeVisible();
+    await expect(page.getByText(/家庭账号 · 用户/).first()).toBeVisible();
 
     await page.getByRole("button", { name: /切换到父母家/ }).click();
 
@@ -41,12 +41,12 @@ test("yard data and permissions stay isolated across all root tabs", async ({ pa
   await expect(page.getByRole("button", { name: "后院" })).toHaveCount(0);
   await page.getByTestId("tab-scenes").click();
   await expect(page.getByText("父母家", { exact: true })).toBeVisible();
-  await expect(page.getByTestId("create-scene")).toHaveCount(0);
+  await expect(page.getByTestId("create-scene")).toBeVisible();
   await expect(page.getByRole("button", { name: /点击立即执行/ }).first()).toBeEnabled();
 
   await page.getByTestId("tab-automation").click();
-  await expect(page.getByTestId("create-schedule")).toHaveCount(0);
-  await expect(page.getByRole("switch").first()).toBeDisabled();
+  await expect(page.getByTestId("create-schedule")).toBeVisible();
+  await expect(page.getByRole("switch").first()).toBeEnabled();
 
   await page.getByTestId("tab-devices").click();
   await page.getByRole("button", { name: "切换庭院" }).click();
@@ -168,7 +168,7 @@ test("joins a yard from a valid invitation", async ({ page }) => {
   await page.getByTestId("join-yard-code").fill("GARDEN-NEW");
   await page.getByTestId("lookup-invite").click();
   await expect(page.getByText("四季庭院", { exact: true })).toBeVisible();
-  await expect(page.getByText(/普通成员/).first()).toBeVisible();
+  await expect(page.getByText("用户", { exact: true }).first()).toBeVisible();
   await page.getByTestId("accept-invite").click();
   await expect(page.getByTestId("active-yard-name")).toHaveText("四季庭院");
 });
@@ -204,14 +204,23 @@ test("owner updates yard profile and cannot remove an area in use", async ({ pag
   await expect(page.getByRole("alert")).toContainText("个设备仍在使用此区域");
 });
 
-test("member sees read-only yard information", async ({ page }) => {
+test("user can edit while guest is strictly read-only", async ({ page }) => {
   await openPrototype(page);
   await page.getByRole("button", { name: "切换庭院" }).click();
   await page.getByRole("button", { name: /切换到父母家/ }).click();
   await page.getByRole("button", { name: "切换庭院" }).click();
   await page.getByRole("button", { name: "管理当前庭院" }).click();
+  await expect(page.getByText("只读访问")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "添加区域" })).toBeVisible();
+  await page.getByTestId("detail-back").click();
+
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: /切换到回访庭院/ }).click();
+  await expect(page.getByTestId("add-device")).toHaveCount(0);
+  await expect(page.getByRole("switch").first()).toBeDisabled();
+  await page.getByRole("button", { name: "切换庭院" }).click();
+  await page.getByRole("button", { name: "管理当前庭院" }).click();
   await expect(page.getByText("只读访问")).toBeVisible();
-  await expect(page.getByTestId("save-yard-profile")).toHaveCount(0);
   await page.getByRole("tab", { name: "资料" }).click();
   await expect(page.getByRole("button", { name: "退出庭院" })).toBeVisible();
 });
@@ -219,27 +228,44 @@ test("member sees read-only yard information", async ({ page }) => {
 test("me tab follows the active yard role and links to shared management", async ({ page }) => {
   await openPrototype(page);
   await page.getByTestId("tab-me").click();
-  await expect(page.getByText("庭院所有者", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: /家庭与成员/ })).toContainText("3 人");
+  await expect(page.getByText("庭院拥有者", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /成员与权限/ })).toContainText("管理");
 
-  await page.getByRole("button", { name: /家庭与成员/ }).click();
-  await expect(page.getByText("林先生", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /成员与权限/ }).click();
+  await expect(page.getByText(/林先生（当前账号）/)).toBeVisible();
   await expect(page.getByText("王女士", { exact: true })).toBeVisible();
   await expect(page.getByText("安装服务", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "返回" }).click();
-  await page.getByRole("button", { name: /临时安装商权限/ }).click();
-  await expect(page.getByText("DC12 控制器", { exact: true })).toBeVisible();
-  await expect(page.getByText("2026-08-31", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "保存授权" })).toBeVisible();
+  await expect(page.getByTestId("add-yard-member")).toBeVisible();
+  await expect(page.getByTestId("transfer-yard")).toBeVisible();
 });
 
-test("expired installer membership cannot become active", async ({ page }) => {
-  await page.clock.setFixedTime(new Date("2026-09-01T08:00:00+08:00"));
+test("installer identity uses the same owner user and guest roles", async ({ page }) => {
   await openPrototype(page);
   await page.getByRole("button", { name: "切换庭院" }).click();
-  await expect(page.getByRole("button", { name: /切换到客户庭院/ })).toHaveAttribute("aria-disabled", "true");
-  await expect(page.getByRole("button", { name: /切换到客户庭院/ })).toContainText("授权已过期");
-  await expect(page.getByTestId("yard-app")).toHaveAttribute("data-yard-id", "my-yard");
+  await expect(page.getByRole("button", { name: /切换到客户庭院/ })).toContainText("安装商账号 · 用户");
+  await expect(page.getByRole("button", { name: /切换到待交付庭院/ })).toContainText("安装商账号 · 拥有者");
+  await expect(page.getByRole("button", { name: /切换到回访庭院/ })).toContainText("安装商账号 · 访客");
+});
+
+test("owner can add a member and transfer the unique ownership", async ({ page }) => {
+  await openPrototype(page);
+  await page.getByTestId("tab-me").click();
+  await page.getByRole("button", { name: /成员与权限/ }).click();
+  await page.getByTestId("add-yard-member").click();
+  await page.getByTestId("new-yard-member-name").fill("赵师傅");
+  await page.getByRole("button", { name: "安装商账号", exact: true }).click();
+  await page.locator(".member-role-choices").getByRole("button", { name: /访客/ }).click();
+  await page.getByTestId("confirm-add-yard-member").click();
+  await expect(page.getByText("赵师傅（当前账号）")).toHaveCount(0);
+  await expect(page.getByTestId("yard-members-page")).toContainText("赵师傅");
+
+  await page.getByTestId("transfer-yard").click();
+  await page.locator(".transfer-target-list").getByRole("button", { name: /安装服务/ }).click();
+  await page.getByTestId("confirm-transfer-yard").click();
+  await expect(page.getByRole("status")).toContainText("你现在是访客");
+  await page.getByTestId("tab-me").click();
+  await expect(page.getByText("访客", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /成员与权限/ })).toContainText("5 人");
 });
 
 test("both visual entry points preserve the active yard workspace", async ({ page }) => {
